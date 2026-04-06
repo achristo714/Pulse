@@ -6,11 +6,12 @@ export function generateReportMarkdown(
   tasks: Task[],
   startDate: Date,
   endDate: Date,
-  members: Profile[]
+  members: Profile[],
+  filterMemberId?: string | null
 ): string {
   const completedTasks = tasks.filter((t) => {
     if (t.status !== 'done') return false;
-    // Use completed_at if available, otherwise fall back to updated_at
+    if (filterMemberId && t.assigned_to !== filterMemberId) return false;
     const doneDate = t.completed_at ? new Date(t.completed_at) : new Date(t.updated_at);
     return doneDate >= startDate && doneDate <= endDate;
   });
@@ -34,13 +35,19 @@ export function generateReportMarkdown(
     byMember[name] = (byMember[name] || 0) + 1;
   }
 
-  const inProgressTasks = tasks.filter((t) => t.status === 'wip');
+  const inProgressTasks = tasks.filter((t) => {
+    if (t.status !== 'wip') return false;
+    if (filterMemberId && t.assigned_to !== filterMemberId) return false;
+    return true;
+  });
   const remainingSubtasks = inProgressTasks.reduce(
     (acc, t) => acc + (t.subtasks?.filter((st) => !st.is_done).length || 0),
     0
   );
 
-  let md = `# Pulse - Weekly Report\n## Applied Technology\n## ${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}\n\n`;
+  const filterName = filterMemberId ? memberMap.get(filterMemberId) : null;
+  const reportTitle = filterName ? `# ${filterName} - Weekly Report` : '# Pulse - Weekly Report';
+  let md = `${reportTitle}\n## Applied Technology\n## ${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}\n\n`;
 
   for (const cat of CATEGORIES) {
     const catTasks = byCategory[cat];
