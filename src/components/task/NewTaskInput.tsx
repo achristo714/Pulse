@@ -43,7 +43,7 @@ export function NewTaskInput({ teamId, createdBy }: NewTaskInputProps) {
       }}
     >
       {/* Plus icon */}
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
+      <svg width="20" height="20" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
         <circle cx="9" cy="9" r="7.5" stroke={focused ? colors.accent.purple : colors.text.muted} strokeWidth="1.5" strokeDasharray="3 3" style={{ transition: 'stroke 200ms' }} />
         <path d="M9 6V12M6 9H12" stroke={focused ? colors.accent.purple : colors.text.muted} strokeWidth="1.5" strokeLinecap="round" style={{ transition: 'stroke 200ms' }} />
       </svg>
@@ -69,8 +69,8 @@ export function NewTaskInput({ teamId, createdBy }: NewTaskInputProps) {
         }}
       />
 
-      {/* Category selector — always visible */}
-      <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+      {/* Category selector — right next to input */}
+      <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
         {CATEGORIES.map((cat) => {
           const active = category === cat;
           const config = CATEGORY_CONFIG[cat];
@@ -80,23 +80,23 @@ export function NewTaskInput({ teamId, createdBy }: NewTaskInputProps) {
               onClick={() => setCategory(cat)}
               title={config.label}
               style={{
-                width: '24px',
-                height: '24px',
+                width: '26px',
+                height: '26px',
                 borderRadius: '6px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: active ? `${config.color}20` : 'transparent',
-                border: active ? `1.5px solid ${config.color}` : `1px solid ${colors.border.default}`,
+                border: active ? `1.5px solid ${config.color}` : `1px solid transparent`,
                 cursor: 'pointer',
                 transition: 'all 150ms',
                 padding: 0,
               }}
               onMouseOver={(e) => {
-                if (!active) e.currentTarget.style.borderColor = config.color + '60';
+                if (!active) e.currentTarget.style.backgroundColor = colors.bg.surfaceHover;
               }}
               onMouseOut={(e) => {
-                if (!active) e.currentTarget.style.borderColor = colors.border.default;
+                if (!active) e.currentTarget.style.backgroundColor = active ? `${config.color}20` : 'transparent';
               }}
             >
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: config.color }} />

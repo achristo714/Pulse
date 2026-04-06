@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { TopBar } from './components/layout/TopBar';
 import { FilterBar } from './components/layout/FilterBar';
 import { NewTaskInput } from './components/task/NewTaskInput';
@@ -8,9 +8,8 @@ import { ReportModal } from './components/report/ReportModal';
 import { useTaskStore } from './stores/taskStore';
 import { useUIStore } from './stores/uiStore';
 import { colors, font } from './lib/theme';
-import type { Profile } from './lib/types';
+import type { Profile, TaskCategory, TaskStatus } from './lib/types';
 
-// Hardcoded team/profile for now — auth flow will be re-added later
 const TEAM_ID = '00000000-0000-0000-0000-000000000001';
 const DEMO_PROFILE: Profile = {
   id: '9546450a-9299-4fd6-b859-7b3f25753c48',
@@ -20,13 +19,53 @@ const DEMO_PROFILE: Profile = {
   role: 'admin',
 };
 
+const SEED_TASKS: { title: string; category: TaskCategory; status: TaskStatus }[] = [
+  { title: 'Prepare ML workshop slides', category: 'education', status: 'wip' },
+  { title: 'Schedule guest lecturer for AI ethics', category: 'education', status: 'todo' },
+  { title: 'Review intern training curriculum', category: 'education', status: 'done' },
+  { title: 'Update Grasshopper tutorial videos', category: 'education', status: 'todo' },
+  { title: 'Organize lunch-and-learn series', category: 'education', status: 'wip' },
+  { title: 'Set up shared GPU server access', category: 'resources', status: 'todo' },
+  { title: 'Evaluate Rhino 8 licenses', category: 'resources', status: 'wip' },
+  { title: 'Migrate assets to new NAS', category: 'resources', status: 'done' },
+  { title: 'Benchmark rendering pipeline', category: 'resources', status: 'todo' },
+  { title: 'Document API keys and credentials', category: 'resources', status: 'wip' },
+  { title: 'Fix Revit plugin crash on export', category: 'support', status: 'wip' },
+  { title: 'Help BIM team with Dynamo scripts', category: 'support', status: 'todo' },
+  { title: 'Debug data dashboard loading issue', category: 'support', status: 'done' },
+  { title: 'Respond to IT security audit', category: 'support', status: 'todo' },
+  { title: 'Set up VPN for remote team', category: 'support', status: 'wip' },
+  { title: 'Plan Q3 roadmap', category: 'admin', status: 'todo' },
+  { title: 'Update team wiki and onboarding docs', category: 'admin', status: 'wip' },
+  { title: 'Submit conference travel request', category: 'admin', status: 'done' },
+  { title: 'Review and approve timesheets', category: 'admin', status: 'todo' },
+  { title: 'Coordinate with HR on new hires', category: 'admin', status: 'todo' },
+];
+
 export default function App() {
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
+  const createTask = useTaskStore((s) => s.createTask);
+  const tasks = useTaskStore((s) => s.tasks);
   const { viewMode, reportModalOpen, setReportModalOpen } = useUIStore();
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     fetchTasks(TEAM_ID);
   }, [fetchTasks]);
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    for (const t of SEED_TASKS) {
+      await createTask({
+        team_id: TEAM_ID,
+        created_by: DEMO_PROFILE.id,
+        title: t.title,
+        status: t.status,
+        category: t.category,
+      });
+    }
+    setSeeding(false);
+  };
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
@@ -43,6 +82,33 @@ export default function App() {
         <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />
       )}
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
+
+      {/* Debug seed button */}
+      {tasks.length < 10 && (
+        <button
+          onClick={handleSeed}
+          disabled={seeding}
+          style={{
+            position: 'fixed',
+            bottom: '16px',
+            left: '16px',
+            padding: '8px 16px',
+            backgroundColor: seeding ? colors.bg.surfaceActive : colors.bg.surface,
+            color: seeding ? colors.text.muted : colors.accent.purple,
+            fontSize: font.size.sm,
+            fontWeight: font.weight.medium,
+            borderRadius: '8px',
+            border: `1px solid ${colors.border.default}`,
+            cursor: seeding ? 'not-allowed' : 'pointer',
+            fontFamily: font.family,
+            zIndex: 100,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            transition: 'all 150ms',
+          }}
+        >
+          {seeding ? 'Seeding...' : '🧪 Seed 20 Demo Tasks'}
+        </button>
+      )}
     </div>
   );
 }
