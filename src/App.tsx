@@ -5,8 +5,13 @@ import { NewTaskInput } from './components/task/NewTaskInput';
 import { ListView } from './views/ListView';
 import { CanvasView } from './views/CanvasView';
 import { VaultView } from './views/VaultView';
+import { KnowledgeView } from './views/KnowledgeView';
+import { GoalsView } from './views/GoalsView';
 import { ReportModal } from './components/report/ReportModal';
 import { useTaskStore } from './stores/taskStore';
+import { useSubscriptionStore } from './stores/subscriptionStore';
+import { useKnowledgeStore } from './stores/knowledgeStore';
+import { useGoalStore } from './stores/goalStore';
 import { useUIStore } from './stores/uiStore';
 import { colors, font } from './lib/theme';
 import type { Profile, TaskCategory, TaskStatus } from './lib/types';
@@ -43,10 +48,48 @@ const SEED_TASKS: { title: string; category: TaskCategory; status: TaskStatus }[
   { title: 'Coordinate with HR on new hires', category: 'admin', status: 'todo' },
 ];
 
+const SEED_VAULT = [
+  { name: 'Adobe Creative Cloud', url: 'https://adobe.com', username: 'team@kpf.com', password: 'AdobeTeam2024!', category: 'design' as const, cost: 54.99, billing_cycle: 'monthly' as const },
+  { name: 'Figma', url: 'https://figma.com', username: 'design@kpf.com', password: 'FigmaKPF#2024', category: 'design' as const, cost: 15, billing_cycle: 'monthly' as const },
+  { name: 'GitHub Organization', url: 'https://github.com', username: 'kpf-apptech', password: 'gh_pat_xxxxx', category: 'engineering' as const, cost: 21, billing_cycle: 'monthly' as const },
+  { name: 'AWS Console', url: 'https://aws.amazon.com', username: 'admin@kpf.com', password: 'AwS!Kpf2024#Secure', category: 'cloud' as const, cost: 150, billing_cycle: 'monthly' as const },
+  { name: 'OpenAI API', url: 'https://platform.openai.com', username: 'api@kpf.com', password: 'sk-xxxxx', category: 'ai' as const, cost: 120, billing_cycle: 'monthly' as const },
+  { name: 'Slack Workspace', url: 'https://kpf.slack.com', username: 'admin@kpf.com', password: 'SlackAdmin!2024', category: 'communication' as const, cost: 8.75, billing_cycle: 'monthly' as const },
+  { name: 'Notion', url: 'https://notion.so', username: 'team@kpf.com', password: 'NotionKPF#24', category: 'productivity' as const, cost: 10, billing_cycle: 'monthly' as const },
+];
+
+const SEED_KNOWLEDGE = [
+  { title: 'Rhino to Revit Export Workflow', category: 'workflow' as const, content: '<h2>Steps</h2><ol><li>Export from Rhino as .3dm</li><li>Use Rhino.Inside.Revit plugin</li><li>Map layers to Revit categories</li><li>Run clash detection</li></ol>' },
+  { title: 'Setting Up a New GPU Render Node', category: 'guide' as const, content: '<h2>Prerequisites</h2><ul><li>NVIDIA RTX 4090 or better</li><li>Ubuntu 22.04 LTS</li><li>CUDA 12.x</li></ul><p>Follow the IT setup guide in SharePoint and register the node in our render farm dashboard.</p>' },
+  { title: 'Useful Links', category: 'link' as const, content: '<ul><li><strong>SharePoint</strong> - Internal docs</li><li><strong>Jira Board</strong> - Legacy tickets</li><li><strong>Render Farm</strong> - GPU cluster dashboard</li><li><strong>Design Library</strong> - Material samples</li></ul>' },
+  { title: 'Python Environment Setup', category: 'guide' as const, content: '<h2>Setup</h2><pre><code>conda create -n kpf python=3.11\nconda activate kpf\npip install -r requirements.txt</code></pre><p>Always use the shared conda environment for consistency.</p>' },
+  { title: 'Weekly Standup Format (Draft)', category: 'draft' as const, content: '<p>Each person covers:</p><ol><li>What I shipped this week</li><li>What I\'m working on next</li><li>Any blockers</li></ol><p><em>Keep it under 2 minutes each.</em></p>' },
+];
+
+const SEED_GOALS = [
+  { title: 'Launch Pulse v1 for the team', category: 'admin' as const, description: 'Get Pulse deployed, tested, and adopted by the full Applied Tech team.', progress: 65 },
+  { title: 'Build ML pipeline for facade optimization', category: 'resources' as const, description: 'End-to-end ML pipeline that takes facade parameters and outputs energy performance predictions.', progress: 30 },
+  { title: 'Complete intern training program', category: 'education' as const, description: 'Design and deliver a 6-week onboarding curriculum for summer interns.', progress: 45 },
+  { title: 'Migrate all tools to cloud infrastructure', category: 'resources' as const, description: 'Move from on-prem render farm to AWS/Azure cloud compute.', progress: 15 },
+];
+
 export default function App() {
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
   const createTask = useTaskStore((s) => s.createTask);
+  const deleteTask = useTaskStore((s) => s.deleteTask);
   const tasks = useTaskStore((s) => s.tasks);
+  const createSubscription = useSubscriptionStore((s) => s.createSubscription);
+  const fetchSubscriptions = useSubscriptionStore((s) => s.fetchSubscriptions);
+  const subscriptions = useSubscriptionStore((s) => s.subscriptions);
+  const deleteSubscription = useSubscriptionStore((s) => s.deleteSubscription);
+  const createArticle = useKnowledgeStore((s) => s.createArticle);
+  const fetchArticles = useKnowledgeStore((s) => s.fetchArticles);
+  const articles = useKnowledgeStore((s) => s.articles);
+  const deleteArticle = useKnowledgeStore((s) => s.deleteArticle);
+  const createGoal = useGoalStore((s) => s.createGoal);
+  const fetchGoals = useGoalStore((s) => s.fetchGoals);
+  const goals = useGoalStore((s) => s.goals);
+  const deleteGoal = useGoalStore((s) => s.deleteGoal);
   const { viewMode, setViewMode, reportModalOpen, setReportModalOpen } = useUIStore();
   const [seeding, setSeeding] = useState(false);
   const [newTaskCategory, setNewTaskCategory] = useState<TaskCategory>('admin');
@@ -57,38 +100,48 @@ export default function App() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-
-      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, title: 'New Task', status: 'todo', category: newTaskCategory });
-      }
+      const t = e.target as HTMLElement;
+      if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return;
+      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, title: 'New Task', status: 'todo', category: newTaskCategory }); }
       if (e.key === '1') setViewMode('list');
       if (e.key === '2') setViewMode('canvas');
-      if (e.key === '3') setViewMode('vault');
+      if (e.key === '3') setViewMode('goals');
+      if (e.key === '4') setViewMode('knowledge');
+      if (e.key === '5') setViewMode('vault');
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) setReportModalOpen(true);
-      if (e.key === 'Escape') { setReportModalOpen(false); }
+      if (e.key === 'Escape') setReportModalOpen(false);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [createTask, newTaskCategory, setViewMode, setReportModalOpen]);
 
-  const deleteTask = useTaskStore((s) => s.deleteTask);
-
-  const handleClearAll = async () => {
-    if (!confirm('Delete all tasks? This cannot be undone.')) return;
-    for (const t of [...tasks]) {
-      await deleteTask(t.id);
-    }
+  const handleSeedTasks = async () => {
+    setSeeding(true);
+    for (const t of SEED_TASKS) await createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, ...t });
+    setSeeding(false);
   };
 
-  const handleSeed = async () => {
-    setSeeding(true);
-    for (const t of SEED_TASKS) {
-      await createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, title: t.title, status: t.status, category: t.category });
-    }
-    setSeeding(false);
+  const handleSeedVault = async () => {
+    for (const s of SEED_VAULT) await createSubscription({ ...s, team_id: TEAM_ID, created_by: DEMO_PROFILE.id });
+    fetchSubscriptions(TEAM_ID);
+  };
+
+  const handleSeedKnowledge = async () => {
+    for (const a of SEED_KNOWLEDGE) await createArticle({ ...a, team_id: TEAM_ID, created_by: DEMO_PROFILE.id });
+    fetchArticles(TEAM_ID);
+  };
+
+  const handleSeedGoals = async () => {
+    for (const g of SEED_GOALS) await createGoal({ ...g, team_id: TEAM_ID, created_by: DEMO_PROFILE.id });
+    fetchGoals(TEAM_ID);
+  };
+
+  const handleClearAll = async () => {
+    if (!confirm('Delete everything? This cannot be undone.')) return;
+    for (const t of [...tasks]) await deleteTask(t.id);
+    for (const s of [...subscriptions]) await deleteSubscription(s.id);
+    for (const a of [...articles]) await deleteArticle(a.id);
+    for (const g of [...goals]) await deleteGoal(g.id);
   };
 
   return (
@@ -102,50 +155,44 @@ export default function App() {
         </>
       )}
 
-      {viewMode === 'list' ? (
-        <ListView members={[DEMO_PROFILE]} searchQuery={searchQuery} />
-      ) : viewMode === 'canvas' ? (
-        <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />
-      ) : (
-        <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />
-      )}
+      {viewMode === 'list' && <ListView members={[DEMO_PROFILE]} searchQuery={searchQuery} />}
+      {viewMode === 'canvas' && <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />}
+      {viewMode === 'goals' && <GoalsView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
+      {viewMode === 'knowledge' && <KnowledgeView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
+      {viewMode === 'vault' && <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
 
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
 
-      {/* Keyboard shortcuts hint */}
+      {/* Keyboard hints */}
       <div style={{
         position: 'fixed', bottom: '16px', right: '16px', fontSize: font.size.xs, color: colors.text.muted,
         backgroundColor: 'rgba(26,26,26,0.9)', padding: '6px 10px', borderRadius: '6px',
         border: `1px solid ${colors.border.default}`, zIndex: 5, lineHeight: 1.6,
       }}>
-        <span style={{ color: colors.text.secondary }}>N</span> new task &nbsp;
-        <span style={{ color: colors.text.secondary }}>1/2/3</span> views &nbsp;
+        <span style={{ color: colors.text.secondary }}>N</span> task &nbsp;
+        <span style={{ color: colors.text.secondary }}>1-5</span> views &nbsp;
         <span style={{ color: colors.text.secondary }}>R</span> report
       </div>
 
       {/* Debug buttons */}
-      <div style={{ position: 'fixed', bottom: '16px', left: '16px', display: 'flex', gap: '8px', zIndex: 100 }}>
-        <button onClick={handleSeed} disabled={seeding} style={{
-          padding: '8px 14px',
-          backgroundColor: colors.bg.surface, color: colors.accent.purple,
-          fontSize: font.size.xs, fontWeight: font.weight.medium, borderRadius: '8px',
-          border: `1px solid ${colors.border.default}`, cursor: seeding ? 'not-allowed' : 'pointer',
-          fontFamily: font.family, boxShadow: '0 4px 16px rgba(0,0,0,0.3)', opacity: seeding ? 0.5 : 1,
-        }}>
-          {seeding ? 'Seeding...' : '+ Seed 20'}
-        </button>
-        {tasks.length > 0 && (
-          <button onClick={handleClearAll} style={{
-            padding: '8px 14px',
-            backgroundColor: colors.bg.surface, color: colors.danger,
-            fontSize: font.size.xs, fontWeight: font.weight.medium, borderRadius: '8px',
-            border: `1px solid ${colors.border.default}`, cursor: 'pointer',
-            fontFamily: font.family, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-          }}>
-            Clear All
-          </button>
-        )}
+      <div style={{ position: 'fixed', bottom: '16px', left: '16px', display: 'flex', gap: '6px', zIndex: 100, flexWrap: 'wrap', maxWidth: '400px' }}>
+        <DbgBtn onClick={handleSeedTasks} disabled={seeding} color={colors.accent.purple}>{seeding ? '...' : '+ Tasks'}</DbgBtn>
+        <DbgBtn onClick={handleSeedVault} color={colors.category.resources}>+ Vault</DbgBtn>
+        <DbgBtn onClick={handleSeedKnowledge} color={colors.category.education}>+ Knowledge</DbgBtn>
+        <DbgBtn onClick={handleSeedGoals} color={colors.category.support}>+ Goals</DbgBtn>
+        <DbgBtn onClick={handleClearAll} color={colors.danger}>Clear All</DbgBtn>
       </div>
     </div>
+  );
+}
+
+function DbgBtn({ onClick, disabled, color, children }: { onClick: () => void; disabled?: boolean; color: string; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      padding: '5px 10px', backgroundColor: colors.bg.surface, color,
+      fontSize: '11px', fontWeight: 500, borderRadius: '6px',
+      border: `1px solid ${colors.border.default}`, cursor: disabled ? 'not-allowed' : 'pointer',
+      fontFamily: font.family, boxShadow: '0 2px 8px rgba(0,0,0,0.3)', opacity: disabled ? 0.5 : 1,
+    }}>{children}</button>
   );
 }

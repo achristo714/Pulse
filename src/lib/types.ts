@@ -95,6 +95,35 @@ export interface Subscription {
   updated_at: string;
 }
 
+export type KnowledgeCategory = 'workflow' | 'guide' | 'link' | 'reference' | 'draft' | 'general';
+
+export interface KnowledgeArticle {
+  id: string;
+  team_id: string;
+  title: string;
+  content: string;
+  category: KnowledgeCategory;
+  tags: string[];
+  pinned: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Goal {
+  id: string;
+  team_id: string;
+  title: string;
+  description: string | null;
+  status: 'active' | 'completed' | 'paused';
+  progress: number;
+  target_date: string | null;
+  category: TaskCategory;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ReportData {
   start_date: string;
   end_date: string;
