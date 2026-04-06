@@ -22,7 +22,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   const {
     positions, stickyNotes, zoom, panX, panY,
     setZoom, setPan, selectedItemId, setSelectedItem,
-    updatePosition, createStickyNote, snapToGrid,
+    updatePosition, createStickyNote, createTaskPosition, snapToGrid,
   } = useCanvasStore();
   const tasks = useTaskStore((s) => s.tasks);
 
@@ -82,6 +82,23 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     setDragState({ id: posId, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y });
   }, [positions, setSelectedItem]);
 
+  // Drop handler for dragging tasks from inbox to canvas
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const taskId = e.dataTransfer.getData('taskId');
+    if (!taskId || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - panX) / zoom;
+    const y = (e.clientY - rect.top - panY) / zoom;
+    const snapped = snapToGrid(x, y);
+    createTaskPosition(teamId, taskId, snapped.x, snapped.y);
+  }, [panX, panY, zoom, snapToGrid, createTaskPosition, teamId]);
+
   const placedTaskIds = new Set(positions.filter((p) => p.item_type === 'task').map((p) => p.item_id));
   const unplacedTasks = tasks.filter((t) => !placedTaskIds.has(t.id));
 
@@ -107,6 +124,16 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
         onContextMenu={handleContextMenu}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onDoubleClick={(e) => {
+          if (e.target === canvasRef.current) {
+            const rect = canvasRef.current.getBoundingClientRect();
+            const x = (e.clientX - rect.left - panX) / zoom;
+            const y = (e.clientY - rect.top - panY) / zoom;
+            createStickyNote(teamId, userId, x, y);
+          }
+        }}
       >
         {/* Dot grid — low opacity, Destiny-style geometric */}
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
