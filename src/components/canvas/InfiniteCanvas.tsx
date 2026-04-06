@@ -88,7 +88,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   const gridStep = CANVAS_GRID_SIZE * zoom;
 
   return (
-    <div style={{ position: 'relative', flex: 1, overflow: 'hidden', backgroundColor: colors.bg.primary }}>
+    <div style={{ position: 'relative', flex: 1, overflow: 'hidden', backgroundColor: colors.bg.primary, height: '100%' }}>
       {/* Inbox */}
       <CanvasInbox tasks={unplacedTasks} members={members} teamId={teamId} />
 
