@@ -190,8 +190,42 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
         {/* Notes */}
         <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
           <SectionLabel>Notes</SectionLabel>
-          <div style={{ backgroundColor: colors.bg.primary, border: `1px solid ${colors.border.default}`, borderRadius: '6px', minHeight: '100px' }}>
-            <EditorContent editor={editor} />
+          <div style={{ backgroundColor: colors.bg.primary, border: `1px solid ${colors.border.default}`, borderRadius: '8px', overflow: 'hidden' }}>
+            {/* Rich text toolbar */}
+            {editor && (
+              <div style={{
+                display: 'flex', gap: '2px', padding: '6px 8px',
+                borderBottom: `1px solid ${colors.border.default}`,
+                flexWrap: 'wrap',
+              }}>
+                <EditorBtn active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} title="Heading 1">H1</EditorBtn>
+                <EditorBtn active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2">H2</EditorBtn>
+                <EditorBtn active={editor.isActive('heading', { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} title="Heading 3">H3</EditorBtn>
+                <div style={{ width: '1px', height: '20px', backgroundColor: colors.border.default, margin: '0 4px', alignSelf: 'center' }} />
+                <EditorBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)"><strong>B</strong></EditorBtn>
+                <EditorBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Italic (Ctrl+I)"><em>I</em></EditorBtn>
+                <EditorBtn active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} title="Strikethrough"><s>S</s></EditorBtn>
+                <EditorBtn active={editor.isActive('code')} onClick={() => editor.chain().focus().toggleCode().run()} title="Inline Code">{'<>'}</EditorBtn>
+                <div style={{ width: '1px', height: '20px', backgroundColor: colors.border.default, margin: '0 4px', alignSelf: 'center' }} />
+                <EditorBtn active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Bullet List">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="4" r="1.2" fill="currentColor"/><circle cx="3" cy="7" r="1.2" fill="currentColor"/><circle cx="3" cy="10" r="1.2" fill="currentColor"/><line x1="6" y1="4" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2"/><line x1="6" y1="7" x2="12" y2="7" stroke="currentColor" strokeWidth="1.2"/><line x1="6" y1="10" x2="12" y2="10" stroke="currentColor" strokeWidth="1.2"/></svg>
+                </EditorBtn>
+                <EditorBtn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Numbered List">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><text x="1" y="5.5" fontSize="5" fill="currentColor" fontFamily="inherit">1</text><text x="1" y="8.5" fontSize="5" fill="currentColor" fontFamily="inherit">2</text><text x="1" y="11.5" fontSize="5" fill="currentColor" fontFamily="inherit">3</text><line x1="6" y1="4" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2"/><line x1="6" y1="7" x2="12" y2="7" stroke="currentColor" strokeWidth="1.2"/><line x1="6" y1="10" x2="12" y2="10" stroke="currentColor" strokeWidth="1.2"/></svg>
+                </EditorBtn>
+                <EditorBtn active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()} title="Quote">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3v8M6 5h5M6 8h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                </EditorBtn>
+                <EditorBtn active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()} title="Code Block">
+                  {'{ }'}
+                </EditorBtn>
+                <div style={{ width: '1px', height: '20px', backgroundColor: colors.border.default, margin: '0 4px', alignSelf: 'center' }} />
+                <EditorBtn active={false} onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Divider">—</EditorBtn>
+              </div>
+            )}
+            <div style={{ minHeight: '200px', maxHeight: '400px', overflowY: 'auto' }}>
+              <EditorContent editor={editor} />
+            </div>
           </div>
         </div>
 
@@ -292,6 +326,36 @@ function SelectorBtn({ active, onClick, children, accentColor }: { active: boole
         cursor: 'pointer',
         fontFamily: 'inherit',
         transition: 'all 150ms ease-out',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EditorBtn({ active, onClick, title, children }: { active: boolean; onClick: () => void; title: string; children: React.ReactNode }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseOver={() => setHovered(true)}
+      onMouseOut={() => setHovered(false)}
+      title={title}
+      style={{
+        width: '28px',
+        height: '28px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '4px',
+        fontSize: font.size.xs,
+        color: active ? colors.accent.purple : (hovered ? colors.text.primary : colors.text.muted),
+        backgroundColor: active ? colors.accent.purpleSubtle : (hovered ? colors.bg.surfaceHover : 'transparent'),
+        border: 'none',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        transition: 'all 100ms',
+        padding: 0,
       }}
     >
       {children}
