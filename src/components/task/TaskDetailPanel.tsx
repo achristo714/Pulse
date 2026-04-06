@@ -9,7 +9,8 @@ import { Avatar } from '../ui/Avatar';
 import { useTaskStore } from '../../stores/taskStore';
 import { useGoalStore } from '../../stores/goalStore';
 import { useKnowledgeStore } from '../../stores/knowledgeStore';
-import { CATEGORY_CONFIG, CATEGORIES, STATUSES } from '../../lib/constants';
+import { STATUSES } from '../../lib/constants';
+import { useCategoryStore } from '../../stores/categoryStore';
 import { colors, font, shadow } from '../../lib/theme';
 import type { Task, Profile } from '../../lib/types';
 import { supabase } from '../../lib/supabase';
@@ -27,6 +28,7 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
   const articles = useKnowledgeStore((s) => s.articles);
   const taskDeps = allDependencies.filter((d) => d.task_id === task.id);
   const taskBlocks = allDependencies.filter((d) => d.depends_on === task.id);
+  const { categories: teamCategories } = useCategoryStore();
   const [title, setTitle] = useState(task.title);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -167,10 +169,10 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
         {/* Category */}
         <Section label="Category">
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {CATEGORIES.map((cat) => (
-              <SelectorBtn key={cat} active={task.category === cat} onClick={() => updateTask(task.id, { category: cat })} accentColor={task.category === cat ? CATEGORY_CONFIG[cat].color : undefined}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: CATEGORY_CONFIG[cat].color, display: 'inline-block' }} />
-                {CATEGORY_CONFIG[cat].label}
+            {teamCategories.map((cat) => (
+              <SelectorBtn key={cat.key} active={task.category === cat.key} onClick={() => updateTask(task.id, { category: cat.key as any })} accentColor={task.category === cat.key ? cat.color : undefined}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: cat.color, display: 'inline-block' }} />
+                {cat.label}
               </SelectorBtn>
             ))}
           </div>

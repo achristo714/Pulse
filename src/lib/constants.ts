@@ -6,7 +6,7 @@ export const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; n
   done: { label: 'Done', color: 'var(--color-status-done)', next: 'todo' },
 };
 
-export const CATEGORY_CONFIG: Record<TaskCategory, { label: string; color: string }> = {
+export const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   education: { label: 'Education', color: 'var(--color-cat-education)' },
   resources: { label: 'Resources', color: 'var(--color-cat-resources)' },
   support: { label: 'Support', color: 'var(--color-cat-support)' },

@@ -9,10 +9,12 @@ import { KnowledgeView } from './views/KnowledgeView';
 import { GoalsView } from './views/GoalsView';
 import { CalendarView } from './views/CalendarView';
 import { ReportModal } from './components/report/ReportModal';
+import { CategoryEditor } from './components/ui/CategoryEditor';
 import { useTaskStore } from './stores/taskStore';
 import { useSubscriptionStore } from './stores/subscriptionStore';
 import { useKnowledgeStore } from './stores/knowledgeStore';
 import { useGoalStore } from './stores/goalStore';
+import { useCategoryStore } from './stores/categoryStore';
 import { useUIStore } from './stores/uiStore';
 import { colors, font } from './lib/theme';
 import type { Profile, TaskCategory, TaskStatus } from './lib/types';
@@ -92,10 +94,11 @@ export default function App() {
   const goals = useGoalStore((s) => s.goals);
   const deleteGoal = useGoalStore((s) => s.deleteGoal);
   const { viewMode, setViewMode, reportModalOpen, setReportModalOpen } = useUIStore();
+  const fetchCategories = useCategoryStore((s) => s.fetchCategories);
   const [seeding, setSeeding] = useState(false);
-  const [newTaskCategory, setNewTaskCategory] = useState<TaskCategory>('admin');
+  const [newTaskCategory, setNewTaskCategory] = useState<string>('admin');
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const fetchDependencies = useTaskStore((s) => s.fetchDependencies);
 
   useEffect(() => {
@@ -104,7 +107,8 @@ export default function App() {
     fetchGoals(TEAM_ID);
     fetchArticles(TEAM_ID);
     fetchSubscriptions(TEAM_ID);
-  }, [fetchTasks, fetchDependencies, fetchGoals, fetchArticles, fetchSubscriptions]);
+    fetchCategories(TEAM_ID);
+  }, [fetchTasks, fetchDependencies, fetchGoals, fetchArticles, fetchSubscriptions, fetchCategories]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -160,7 +164,7 @@ export default function App() {
 
       {viewMode === 'list' && (
         <>
-          <FilterBar members={[DEMO_PROFILE]} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+          <FilterBar members={[DEMO_PROFILE]} searchQuery={searchQuery} onSearchChange={setSearchQuery} onEditCategories={() => setCategoryEditorOpen(true)} />
           <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} category={newTaskCategory} onCategoryChange={setNewTaskCategory} />
         </>
       )}
@@ -173,6 +177,7 @@ export default function App() {
       {viewMode === 'vault' && <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
 
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
+      <CategoryEditor open={categoryEditorOpen} onClose={() => setCategoryEditorOpen(false)} teamId={TEAM_ID} />
 
       {/* Keyboard hints */}
       <div style={{

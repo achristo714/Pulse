@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { TaskCategory, TaskStatus } from '../lib/types';
+import type { TaskStatus } from '../lib/types';
 
 type ViewMode = 'list' | 'canvas' | 'calendar' | 'goals' | 'knowledge' | 'vault';
 
@@ -8,10 +8,10 @@ interface UIState {
   setViewMode: (mode: ViewMode) => void;
 
   // Filters
-  categoryFilters: TaskCategory[];
+  categoryFilters: string[];
   statusFilters: TaskStatus[];
-  assigneeFilter: string | null; // profile id or 'unassigned'
-  toggleCategoryFilter: (cat: TaskCategory) => void;
+  assigneeFilter: string | null;
+  toggleCategoryFilter: (cat: string) => void;
   toggleStatusFilter: (status: TaskStatus) => void;
   setAssigneeFilter: (id: string | null) => void;
   clearFilters: () => void;
@@ -21,8 +21,8 @@ interface UIState {
   setReportModalOpen: (open: boolean) => void;
 
   // Collapsed categories
-  collapsedCategories: Set<TaskCategory>;
-  toggleCategoryCollapse: (cat: TaskCategory) => void;
+  collapsedCategories: Set<string>;
+  toggleCategoryCollapse: (cat: string) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({

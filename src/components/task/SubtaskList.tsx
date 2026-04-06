@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { StatusCircle } from './StatusCircle';
-import type { Subtask, TaskCategory } from '../../lib/types';
+import type { Subtask } from '../../lib/types';
 import { useTaskStore } from '../../stores/taskStore';
 import { colors, font } from '../../lib/theme';
 
 interface SubtaskListProps {
   taskId: string;
   subtasks: Subtask[];
-  category?: TaskCategory;
+  category?: string;
 }
 
 export function SubtaskList({ taskId, subtasks, category }: SubtaskListProps) {
@@ -63,7 +63,7 @@ export function SubtaskList({ taskId, subtasks, category }: SubtaskListProps) {
   );
 }
 
-function SubtaskItem({ subtask, category, onToggle, onDelete }: { subtask: Subtask; category?: TaskCategory; onToggle: () => void; onDelete: () => void }) {
+function SubtaskItem({ subtask, category, onToggle, onDelete }: { subtask: Subtask; category?: string; onToggle: () => void; onDelete: () => void }) {
   const [hovered, setHovered] = useState(false);
 
   return (

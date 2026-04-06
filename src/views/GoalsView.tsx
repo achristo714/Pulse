@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useGoalStore } from '../stores/goalStore';
-import { CATEGORY_CONFIG, CATEGORIES } from '../lib/constants';
+import { useCategoryStore as useCatStoreGoal } from '../stores/categoryStore';
 import { colors, font } from '../lib/theme';
-import type { Goal, TaskCategory } from '../lib/types';
+import type { Goal } from '../lib/types';
+import { useCategoryStore } from '../stores/categoryStore';
 
 interface GoalsViewProps {
   teamId: string;
@@ -74,7 +75,8 @@ function GoalCard({ goal, onUpdate, onDelete }: { goal: Goal; onUpdate: (id: str
   const [hovered, setHovered] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showSlider, setShowSlider] = useState(false);
-  const catConfig = CATEGORY_CONFIG[goal.category];
+  const catConfigMap = useCatStoreGoal.getState().getCategoryConfig();
+  const catConfig = catConfigMap[goal.category] || { label: goal.category, color: '#666' };
 
   if (editing) {
     return <GoalForm initial={goal} onSave={async (data) => { await onUpdate(goal.id, data); setEditing(false); }} onCancel={() => setEditing(false)} />;
@@ -147,7 +149,8 @@ function GoalCard({ goal, onUpdate, onDelete }: { goal: Goal; onUpdate: (id: str
 function GoalForm({ initial, onSave, onCancel }: { initial?: Partial<Goal>; onSave: (data: Partial<Goal>) => Promise<void>; onCancel: () => void }) {
   const [title, setTitle] = useState(initial?.title || '');
   const [description, setDescription] = useState(initial?.description || '');
-  const [category, setCategory] = useState<TaskCategory>(initial?.category || 'admin');
+  const [category, setCategory] = useState<string>(initial?.category || 'admin');
+  const { categories: teamCats } = useCategoryStore();
   const [targetDate, setTargetDate] = useState(initial?.target_date || '');
   const [saving, setSaving] = useState(false);
 
@@ -171,8 +174,8 @@ function GoalForm({ initial, onSave, onCancel }: { initial?: Partial<Goal>; onSa
         </div>
         <div>
           <Label>Category</Label>
-          <select value={category} onChange={(e) => setCategory(e.target.value as TaskCategory)} style={{ ...inputStyle, appearance: 'auto' as any }}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_CONFIG[c].label}</option>)}
+          <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...inputStyle, appearance: 'auto' as any }}>
+            {teamCats.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
           </select>
         </div>
         <div>

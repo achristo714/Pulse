@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import type { Task, TaskCategory, Profile } from './types';
+import type { Task, Profile } from './types';
 import { CATEGORY_CONFIG, CATEGORIES } from './constants';
 
 export function generateReportMarkdown(
@@ -16,7 +16,7 @@ export function generateReportMarkdown(
     return doneDate >= startDate && doneDate <= endDate;
   });
 
-  const byCategory: Record<TaskCategory, Task[]> = {
+  const byCategory: Record<string, Task[]> = {
     education: [],
     resources: [],
     support: [],

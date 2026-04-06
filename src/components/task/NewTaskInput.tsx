@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { useTaskStore } from '../../stores/taskStore';
 import { CategoryPicker } from './CategoryPicker';
 import { colors, font } from '../../lib/theme';
-import type { TaskCategory } from '../../lib/types';
-
 interface NewTaskInputProps {
   teamId: string;
   createdBy: string;
-  category: TaskCategory;
-  onCategoryChange: (cat: TaskCategory) => void;
+  category: string;
+  onCategoryChange: (cat: string) => void;
 }
 
 export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: NewTaskInputProps) {

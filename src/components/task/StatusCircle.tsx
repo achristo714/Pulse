@@ -1,33 +1,28 @@
-import type { TaskStatus, TaskCategory } from '../../lib/types';
-import { STATUS_CONFIG, CATEGORY_CONFIG } from '../../lib/constants';
+import type { TaskStatus } from '../../lib/types';
+import { STATUS_CONFIG } from '../../lib/constants';
+import { useCategoryStore } from '../../stores/categoryStore';
 
 interface StatusCircleProps {
   status: TaskStatus;
   size?: number;
-  category?: TaskCategory;
+  category?: string;
   onClick?: () => void;
 }
 
 export function StatusCircle({ status, size = 18, category, onClick }: StatusCircleProps) {
-  // WIP and Done use category color if provided
-  const color = (status === 'wip' || status === 'done') && category
-    ? CATEGORY_CONFIG[category].color
+  const { getCategoryConfig } = useCategoryStore();
+  const catConfig = getCategoryConfig();
+  const catColor = category ? catConfig[category]?.color : null;
+  const color = (status === 'wip' || status === 'done') && catColor
+    ? catColor
     : STATUS_CONFIG[status].color;
 
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.();
-      }}
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
       style={{
-        flexShrink: 0,
-        cursor: 'pointer',
-        background: 'none',
-        border: 'none',
-        padding: 0,
-        display: 'flex',
-        transition: 'transform 150ms',
+        flexShrink: 0, cursor: 'pointer', background: 'none', border: 'none',
+        padding: 0, display: 'flex', transition: 'transform 150ms',
       }}
       title={STATUS_CONFIG[status].label}
       onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.15)')}
@@ -35,19 +30,11 @@ export function StatusCircle({ status, size = 18, category, onClick }: StatusCir
     >
       <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
         <circle cx="9" cy="9" r="7.5" stroke={color} strokeWidth="1.5" />
-        {status === 'wip' && (
-          <path d="M9 1.5A7.5 7.5 0 0 1 9 16.5" fill={color} />
-        )}
+        {status === 'wip' && <path d="M9 1.5A7.5 7.5 0 0 1 9 16.5" fill={color} />}
         {status === 'done' && (
           <>
             <circle cx="9" cy="9" r="7.5" fill={color} />
-            <path
-              d="M5.5 9.5L7.5 11.5L12.5 6.5"
-              stroke="#0F0F0F"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M5.5 9.5L7.5 11.5L12.5 6.5" stroke="#0F0F0F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </>
         )}
       </svg>

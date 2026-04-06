@@ -25,7 +25,7 @@ export interface Task {
   title: string;
   notes: string | null;
   status: TaskStatus;
-  category: TaskCategory;
+  category: string;
   assigned_to: string | null;
   created_by: string;
   created_at: string;
@@ -132,7 +132,7 @@ export interface Goal {
   status: 'active' | 'completed' | 'paused';
   progress: number;
   target_date: string | null;
-  category: TaskCategory;
+  category: string;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -141,7 +141,7 @@ export interface Goal {
 export interface ReportData {
   start_date: string;
   end_date: string;
-  tasks_by_category: Record<TaskCategory, Task[]>;
+  tasks_by_category: Record<string, Task[]>;
   total_completed: number;
   by_member: Record<string, number>;
   in_progress_count: number;
