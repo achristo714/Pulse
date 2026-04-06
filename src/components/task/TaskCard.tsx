@@ -39,7 +39,7 @@ export function TaskCard({ task, members, selected, style: posStyle, onDoubleCli
       onMouseDown={onMouseDown}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-        <StatusCircle status={task.status} onClick={() => cycleStatus(task.id)} size={16} />
+        <StatusCircle status={task.status} category={task.category} onClick={() => cycleStatus(task.id)} size={16} />
         <span
           style={{
             flex: 1,

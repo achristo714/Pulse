@@ -22,14 +22,37 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
   const { updateTask, deleteTask, uploadImage, deleteImage } = useTaskStore();
   const [title, setTitle] = useState(task.title);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [visible, setVisible] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Slide-in animation
+  useEffect(() => { requestAnimationFrame(() => setVisible(true)); }, []);
+
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    setTimeout(onClose, 250);
+  }, [onClose]);
 
   useEffect(() => { setTitle(task.title); }, [task.title]);
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [handleClose]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node) &&
+          overlayRef.current && overlayRef.current === e.target) {
+        handleClose();
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [handleClose]);
 
   const editor = useEditor({
     extensions: [StarterKit, Placeholder.configure({ placeholder: 'Add notes...' })],
@@ -73,11 +96,25 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
   };
 
   return (
+    <>
+    {/* Overlay for click-outside */}
     <div
+      ref={overlayRef}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        top: '60px',
+        zIndex: 29,
+        backgroundColor: visible ? 'rgba(0,0,0,0.2)' : 'transparent',
+        transition: 'background-color 250ms ease-out',
+      }}
+    />
+    <div
+      ref={panelRef}
       style={{
         position: 'fixed',
         right: 0,
-        top: '56px',
+        top: '60px',
         bottom: 0,
         width: '400px',
         backgroundColor: colors.bg.surface,
@@ -86,12 +123,14 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
         zIndex: 30,
         boxShadow: shadow.panel,
         fontFamily: font.family,
+        transform: visible ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${colors.border.default}` }}>
         <span style={{ fontSize: font.size.xs, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Detail</span>
-        <button onClick={onClose} style={{ color: colors.text.muted, cursor: 'pointer', background: 'none', border: 'none' }}>
+        <button onClick={handleClose} style={{ color: colors.text.muted, cursor: 'pointer', background: 'none', border: 'none' }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
         </button>
       </div>
@@ -200,7 +239,7 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
           {confirmDelete ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: font.size.sm, color: colors.danger }}>Delete this task?</span>
-              <button onClick={() => { deleteTask(task.id); onClose(); }} style={{ padding: '4px 10px', backgroundColor: colors.danger, color: 'white', fontSize: font.size.sm, borderRadius: '4px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Confirm</button>
+              <button onClick={() => { deleteTask(task.id); handleClose(); }} style={{ padding: '4px 10px', backgroundColor: colors.danger, color: 'white', fontSize: font.size.sm, borderRadius: '4px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Confirm</button>
               <button onClick={() => setConfirmDelete(false)} style={{ padding: '4px 10px', backgroundColor: 'transparent', color: colors.text.secondary, fontSize: font.size.sm, borderRadius: '4px', border: `1px solid ${colors.border.default}`, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
             </div>
           ) : (
@@ -211,6 +250,7 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
         </div>
       </div>
     </div>
+    </>
   );
 }
 

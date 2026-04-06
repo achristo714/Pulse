@@ -40,7 +40,7 @@ export function FilterBar({ members }: FilterBarProps) {
         display: 'flex',
         alignItems: 'center',
         gap: '16px',
-        padding: '10px 24px',
+        padding: '12px 28px',
         borderBottom: `1px solid ${colors.border.default}`,
         overflowX: 'auto',
         fontFamily: font.family,

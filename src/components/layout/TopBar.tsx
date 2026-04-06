@@ -29,7 +29,7 @@ export function TopBar({ profile, onSignOut }: TopBarProps) {
   return (
     <div
       style={{
-        height: '56px',
+        height: '60px',
         backgroundColor: colors.bg.surface,
         borderBottom: `1px solid ${colors.border.default}`,
         display: 'flex',

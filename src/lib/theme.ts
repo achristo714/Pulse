@@ -1,5 +1,4 @@
 // Pulse Design Tokens — Mistral AI-inspired dark theme
-// French-engineered minimalism: clean surfaces, purple accents, no gradients/glows
 
 export const colors = {
   bg: {
@@ -62,13 +61,13 @@ export const shadow = {
 export const font = {
   family: "'Inter', system-ui, -apple-system, sans-serif",
   size: {
-    xs: '11px',
-    sm: '12px',
-    base: '13px',
-    md: '14px',
-    lg: '16px',
-    xl: '20px',
-    title: '28px',
+    xs: '12px',
+    sm: '13px',
+    base: '14px',
+    md: '15px',
+    lg: '17px',
+    xl: '22px',
+    title: '30px',
   },
   weight: {
     normal: 400,

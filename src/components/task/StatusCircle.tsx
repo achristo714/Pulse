@@ -1,14 +1,18 @@
-import type { TaskStatus } from '../../lib/types';
-import { STATUS_CONFIG } from '../../lib/constants';
+import type { TaskStatus, TaskCategory } from '../../lib/types';
+import { STATUS_CONFIG, CATEGORY_CONFIG } from '../../lib/constants';
 
 interface StatusCircleProps {
   status: TaskStatus;
   size?: number;
+  category?: TaskCategory;
   onClick?: () => void;
 }
 
-export function StatusCircle({ status, size = 18, onClick }: StatusCircleProps) {
-  const color = STATUS_CONFIG[status].color;
+export function StatusCircle({ status, size = 18, category, onClick }: StatusCircleProps) {
+  // WIP uses category color if provided, otherwise default
+  const color = status === 'wip' && category
+    ? CATEGORY_CONFIG[category].color
+    : STATUS_CONFIG[status].color;
 
   return (
     <button
