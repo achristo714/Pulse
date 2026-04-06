@@ -6,9 +6,9 @@ import { format } from 'date-fns';
 import { StatusCircle } from './StatusCircle';
 import { SubtaskList } from './SubtaskList';
 import { Avatar } from '../ui/Avatar';
-import { Button } from '../ui/Button';
 import { useTaskStore } from '../../stores/taskStore';
 import { CATEGORY_CONFIG, CATEGORIES, STATUSES } from '../../lib/constants';
+import { colors, font, shadow } from '../../lib/theme';
 import type { Task, Profile } from '../../lib/types';
 import { supabase } from '../../lib/supabase';
 
@@ -24,236 +24,169 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
   const [confirmDelete, setConfirmDelete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => { setTitle(task.title); }, [task.title]);
   useEffect(() => {
-    setTitle(task.title);
-  }, [task.title]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder: 'Add notes...' }),
-    ],
+    extensions: [StarterKit, Placeholder.configure({ placeholder: 'Add notes...' })],
     content: task.notes || '',
     onBlur: ({ editor }) => {
       const html = editor.getHTML();
-      if (html !== task.notes) {
-        updateTask(task.id, { notes: html });
-      }
+      if (html !== task.notes) updateTask(task.id, { notes: html });
     },
   });
 
   useEffect(() => {
     if (editor && task.notes !== undefined) {
-      const currentContent = editor.getHTML();
-      if (currentContent !== task.notes && task.notes !== null) {
-        editor.commands.setContent(task.notes || '');
-      }
+      const cur = editor.getHTML();
+      if (cur !== task.notes && task.notes !== null) editor.commands.setContent(task.notes || '');
     }
   }, [task.notes, editor]);
 
   const handleTitleBlur = () => {
-    if (title.trim() && title !== task.title) {
-      updateTask(task.id, { title: title.trim() });
-    }
+    if (title.trim() && title !== task.title) updateTask(task.id, { title: title.trim() });
   };
 
   const handleImageUpload = useCallback(async (files: FileList) => {
-    const maxImages = 10;
-    const currentCount = task.images?.length || 0;
-    const remaining = maxImages - currentCount;
-    const toUpload = Array.from(files).slice(0, remaining);
-    for (const file of toUpload) {
+    const remaining = 10 - (task.images?.length || 0);
+    for (const file of Array.from(files).slice(0, remaining)) {
       await uploadImage(task.id, file);
     }
   }, [task.id, task.images?.length, uploadImage]);
 
-  const getImageUrl = (storagePath: string) => {
-    const { data } = supabase.storage.from('task-images').getPublicUrl(storagePath);
-    return data.publicUrl;
+  const getImageUrl = (path: string) => supabase.storage.from('task-images').getPublicUrl(path).data.publicUrl;
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    backgroundColor: colors.bg.primary,
+    border: `1px solid ${colors.border.default}`,
+    borderRadius: '6px',
+    padding: '8px 12px',
+    fontSize: font.size.base,
+    color: colors.text.primary,
+    outline: 'none',
+    fontFamily: 'inherit',
   };
 
   return (
-    <div className="fixed right-0 top-14 bottom-0 w-[400px] bg-bg-surface border-l border-border-default overflow-y-auto z-30 shadow-[-4px_0_24px_rgba(0,0,0,0.3)]">
+    <div
+      style={{
+        position: 'fixed',
+        right: 0,
+        top: '56px',
+        bottom: 0,
+        width: '400px',
+        backgroundColor: colors.bg.surface,
+        borderLeft: `1px solid ${colors.border.default}`,
+        overflowY: 'auto',
+        zIndex: 30,
+        boxShadow: shadow.panel,
+        fontFamily: font.family,
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border-default">
-        <span className="text-[11px] text-text-muted uppercase tracking-wider">Task Detail</span>
-        <button
-          onClick={onClose}
-          className="text-text-muted hover:text-text-primary transition-colors duration-150 cursor-pointer"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: `1px solid ${colors.border.default}` }}>
+        <span style={{ fontSize: font.size.xs, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Detail</span>
+        <button onClick={onClose} style={{ color: colors.text.muted, cursor: 'pointer', background: 'none', border: 'none' }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
         </button>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {/* Title */}
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={handleTitleBlur}
-          className="w-full bg-transparent text-[16px] font-semibold text-text-primary tracking-[-0.01em] focus:outline-none"
+          style={{ width: '100%', backgroundColor: 'transparent', border: 'none', outline: 'none', fontSize: font.size.lg, fontWeight: font.weight.semibold, color: colors.text.primary, letterSpacing: '-0.01em', fontFamily: 'inherit' }}
         />
 
         {/* Status */}
-        <div>
-          <label className="block text-[11px] font-medium text-text-secondary uppercase tracking-wider mb-2">
-            Status
-          </label>
-          <div className="flex gap-3">
+        <Section label="Status">
+          <div style={{ display: 'flex', gap: '8px' }}>
             {STATUSES.map((s) => (
-              <button
-                key={s}
-                onClick={() => updateTask(task.id, { status: s })}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-[6px] text-[12px] font-medium transition-all duration-150 cursor-pointer border ${
-                  task.status === s
-                    ? 'border-border-focus bg-bg-surface-active text-text-primary'
-                    : 'border-border-default text-text-secondary hover:bg-bg-surface-hover'
-                }`}
-              >
+              <SelectorBtn key={s} active={task.status === s} onClick={() => updateTask(task.id, { status: s })}>
                 <StatusCircle status={s} size={14} />
                 {s === 'todo' ? 'To Do' : s === 'wip' ? 'In Progress' : 'Done'}
-              </button>
+              </SelectorBtn>
             ))}
           </div>
-        </div>
+        </Section>
 
         {/* Category */}
-        <div>
-          <label className="block text-[11px] font-medium text-text-secondary uppercase tracking-wider mb-2">
-            Category
-          </label>
-          <div className="flex gap-2">
+        <Section label="Category">
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => updateTask(task.id, { category: cat })}
-                className={`px-3 py-1.5 rounded-[6px] text-[12px] font-medium transition-all duration-150 cursor-pointer border ${
-                  task.category === cat
-                    ? 'border-border-focus bg-bg-surface-active text-text-primary'
-                    : 'border-border-default text-text-secondary hover:bg-bg-surface-hover'
-                }`}
-                style={task.category === cat ? { borderColor: CATEGORY_CONFIG[cat].color } : {}}
-              >
-                <span
-                  className="inline-block w-2 h-2 rounded-full mr-1.5"
-                  style={{ backgroundColor: CATEGORY_CONFIG[cat].color }}
-                />
+              <SelectorBtn key={cat} active={task.category === cat} onClick={() => updateTask(task.id, { category: cat })} accentColor={task.category === cat ? CATEGORY_CONFIG[cat].color : undefined}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: CATEGORY_CONFIG[cat].color, display: 'inline-block' }} />
                 {CATEGORY_CONFIG[cat].label}
-              </button>
+              </SelectorBtn>
             ))}
           </div>
-        </div>
+        </Section>
 
         {/* Assigned To */}
-        <div>
-          <label className="block text-[11px] font-medium text-text-secondary uppercase tracking-wider mb-2">
-            Assigned To
-          </label>
-          <select
-            value={task.assigned_to || ''}
-            onChange={(e) => updateTask(task.id, { assigned_to: e.target.value || null })}
-            className="w-full bg-bg-primary border border-border-default rounded-[4px] px-3 py-2 text-[13px] text-text-primary focus:outline-none focus:border-border-focus transition-colors duration-150"
-          >
+        <Section label="Assigned To">
+          <select value={task.assigned_to || ''} onChange={(e) => updateTask(task.id, { assigned_to: e.target.value || null })} style={{ ...inputStyle, WebkitAppearance: 'none', appearance: 'auto' as any }}>
             <option value="">Unassigned</option>
-            {members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.display_name}
-              </option>
-            ))}
+            {members.map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
           </select>
-        </div>
+        </Section>
 
         {/* Due Date */}
-        <div>
-          <label className="block text-[11px] font-medium text-text-secondary uppercase tracking-wider mb-2">
-            Due Date
-          </label>
-          <input
-            type="date"
-            value={task.due_date || ''}
-            onChange={(e) => updateTask(task.id, { due_date: e.target.value || null })}
-            className="w-full bg-bg-primary border border-border-default rounded-[4px] px-3 py-2 text-[13px] text-text-primary focus:outline-none focus:border-border-focus transition-colors duration-150 [color-scheme:dark]"
-          />
-        </div>
+        <Section label="Due Date">
+          <input type="date" value={task.due_date || ''} onChange={(e) => updateTask(task.id, { due_date: e.target.value || null })} style={{ ...inputStyle, colorScheme: 'dark' }} />
+        </Section>
 
         {/* Subtasks */}
-        <div className="border-t border-border-default pt-4">
+        <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
           <SubtaskList taskId={task.id} subtasks={task.subtasks || []} />
         </div>
 
         {/* Notes */}
-        <div className="border-t border-border-default pt-4">
-          <label className="block text-[11px] font-medium text-text-secondary uppercase tracking-wider mb-2">
-            Notes
-          </label>
-          <div className="bg-bg-primary border border-border-default rounded-[4px] min-h-[100px]">
+        <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
+          <SectionLabel>Notes</SectionLabel>
+          <div style={{ backgroundColor: colors.bg.primary, border: `1px solid ${colors.border.default}`, borderRadius: '6px', minHeight: '100px' }}>
             <EditorContent editor={editor} />
           </div>
         </div>
 
         {/* Images */}
-        <div className="border-t border-border-default pt-4">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-[11px] font-medium text-text-secondary uppercase tracking-wider">
-              Images
-            </label>
-            <span className="text-[11px] text-text-muted">
-              {task.images?.length || 0}/10
-            </span>
+        <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <SectionLabel>Images</SectionLabel>
+            <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>{task.images?.length || 0}/10</span>
           </div>
-          <div className="grid grid-cols-3 gap-2 mb-2">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
             {task.images?.map((img) => (
-              <div key={img.id} className="relative group aspect-square rounded-[4px] overflow-hidden bg-bg-primary">
-                <img
-                  src={getImageUrl(img.storage_path)}
-                  alt={img.caption || ''}
-                  className="w-full h-full object-cover"
-                />
+              <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden', backgroundColor: colors.bg.primary }}>
+                <img src={getImageUrl(img.storage_path)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button
                   onClick={() => deleteImage(img.id, img.storage_path)}
-                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
-                >
-                  ✕
-                </button>
+                  style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}
+                >✕</button>
               </div>
             ))}
           </div>
           {(task.images?.length || 0) < 10 && (
             <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => e.target.files && handleImageUpload(e.target.files)}
-              />
-              <Button
-                variant="ghost"
-                size="sm"
+              <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => e.target.files && handleImageUpload(e.target.files)} />
+              <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full"
-              >
-                Upload Image
-              </Button>
+                style={{ width: '100%', padding: '8px', backgroundColor: 'transparent', border: `1px dashed ${colors.border.default}`, borderRadius: '6px', color: colors.text.secondary, fontSize: font.size.sm, cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 150ms' }}
+              >Upload Image</button>
             </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border-default pt-4 space-y-2">
-          <div className="flex items-center gap-2 text-[11px] text-text-muted">
+        <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: font.size.xs, color: colors.text.muted }}>
             {task.created_profile && (
               <>
                 <span>Created by</span>
@@ -265,29 +198,63 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
           </div>
 
           {confirmDelete ? (
-            <div className="flex items-center gap-2">
-              <span className="text-[12px] text-red-400">Delete this task?</span>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => {
-                  deleteTask(task.id);
-                  onClose();
-                }}
-              >
-                Confirm
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
-                Cancel
-              </Button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: font.size.sm, color: colors.danger }}>Delete this task?</span>
+              <button onClick={() => { deleteTask(task.id); onClose(); }} style={{ padding: '4px 10px', backgroundColor: colors.danger, color: 'white', fontSize: font.size.sm, borderRadius: '4px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Confirm</button>
+              <button onClick={() => setConfirmDelete(false)} style={{ padding: '4px 10px', backgroundColor: 'transparent', color: colors.text.secondary, fontSize: font.size.sm, borderRadius: '4px', border: `1px solid ${colors.border.default}`, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
             </div>
           ) : (
-            <Button variant="danger" size="sm" onClick={() => setConfirmDelete(true)}>
+            <button onClick={() => setConfirmDelete(true)} style={{ alignSelf: 'flex-start', padding: '4px 10px', backgroundColor: 'transparent', color: colors.danger, fontSize: font.size.sm, borderRadius: '4px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
               Delete Task
-            </Button>
+            </button>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <SectionLabel>{label}</SectionLabel>
+      {children}
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontSize: font.size.xs, fontWeight: font.weight.medium, color: colors.text.secondary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+      {children}
+    </div>
+  );
+}
+
+function SelectorBtn({ active, onClick, children, accentColor }: { active: boolean; onClick: () => void; children: React.ReactNode; accentColor?: string }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseOver={() => setHovered(true)}
+      onMouseOut={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 12px',
+        borderRadius: '6px',
+        fontSize: font.size.sm,
+        fontWeight: font.weight.medium,
+        color: active ? colors.text.primary : colors.text.secondary,
+        backgroundColor: active ? colors.bg.surfaceActive : (hovered ? colors.bg.surfaceHover : 'transparent'),
+        border: `1px solid ${active ? (accentColor || colors.border.focus) : colors.border.default}`,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        transition: 'all 150ms ease-out',
+      }}
+    >
+      {children}
+    </button>
   );
 }

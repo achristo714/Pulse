@@ -1,5 +1,6 @@
 import type { TaskCategory } from '../../lib/types';
 import { CATEGORY_CONFIG } from '../../lib/constants';
+import { font } from '../../lib/theme';
 
 interface CategoryPillProps {
   category: TaskCategory;
@@ -9,15 +10,25 @@ export function CategoryPill({ category }: CategoryPillProps) {
   const config = CATEGORY_CONFIG[category];
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
       style={{
-        backgroundColor: `${config.color}15`,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        padding: '2px 8px',
+        borderRadius: '20px',
+        fontSize: font.size.xs,
+        fontWeight: font.weight.medium,
+        backgroundColor: `${config.color}18`,
         color: config.color,
       }}
     >
       <span
-        className="w-1.5 h-1.5 rounded-full"
-        style={{ backgroundColor: config.color }}
+        style={{
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          backgroundColor: config.color,
+        }}
       />
       {config.label}
     </span>

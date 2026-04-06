@@ -1,7 +1,7 @@
-import { Chip } from '../ui/Chip';
 import { Avatar } from '../ui/Avatar';
 import { useUIStore } from '../../stores/uiStore';
 import { CATEGORY_CONFIG, STATUS_CONFIG, CATEGORIES, STATUSES } from '../../lib/constants';
+import { colors, font } from '../../lib/theme';
 import type { Profile } from '../../lib/types';
 
 interface FilterBarProps {
@@ -18,62 +18,93 @@ export function FilterBar({ members }: FilterBarProps) {
     setAssigneeFilter,
   } = useUIStore();
 
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '4px 12px',
+    borderRadius: '20px',
+    fontSize: font.size.sm,
+    fontWeight: font.weight.medium,
+    color: active ? colors.text.primary : colors.text.secondary,
+    backgroundColor: active ? colors.bg.surfaceActive : 'transparent',
+    border: `1px solid ${active ? colors.border.focus : colors.border.default}`,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 150ms ease-out',
+  });
+
   return (
-    <div className="flex items-center gap-4 px-4 py-3 border-b border-border-default overflow-x-auto">
-      {/* Category filters */}
-      <div className="flex items-center gap-1.5">
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        padding: '10px 16px',
+        borderBottom: `1px solid ${colors.border.default}`,
+        overflowX: 'auto',
+        fontFamily: font.family,
+      }}
+    >
+      <div style={{ display: 'flex', gap: '6px' }}>
         {CATEGORIES.map((cat) => (
-          <Chip
+          <button
             key={cat}
-            label={CATEGORY_CONFIG[cat].label}
-            color={CATEGORY_CONFIG[cat].color}
-            active={categoryFilters.includes(cat)}
+            style={chipStyle(categoryFilters.includes(cat))}
             onClick={() => toggleCategoryFilter(cat)}
-          />
+          >
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: CATEGORY_CONFIG[cat].color,
+              }}
+            />
+            {CATEGORY_CONFIG[cat].label}
+          </button>
         ))}
       </div>
 
-      <div className="w-px h-5 bg-border-default" />
+      <div style={{ width: '1px', height: '20px', backgroundColor: colors.border.default }} />
 
-      {/* Status filters */}
-      <div className="flex items-center gap-1.5">
+      <div style={{ display: 'flex', gap: '6px' }}>
         {STATUSES.map((status) => (
-          <Chip
+          <button
             key={status}
-            label={STATUS_CONFIG[status].label}
-            color={STATUS_CONFIG[status].color}
-            active={statusFilters.includes(status)}
+            style={chipStyle(statusFilters.includes(status))}
             onClick={() => toggleStatusFilter(status)}
-          />
+          >
+            <span
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: STATUS_CONFIG[status].color,
+              }}
+            />
+            {STATUS_CONFIG[status].label}
+          </button>
         ))}
       </div>
 
-      <div className="w-px h-5 bg-border-default" />
+      <div style={{ width: '1px', height: '20px', backgroundColor: colors.border.default }} />
 
-      {/* Assignee filters */}
-      <div className="flex items-center gap-1.5">
+      <div style={{ display: 'flex', gap: '6px' }}>
         <button
+          style={chipStyle(assigneeFilter === 'unassigned')}
           onClick={() => setAssigneeFilter(assigneeFilter === 'unassigned' ? null : 'unassigned')}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[12px] font-medium transition-all duration-150 cursor-pointer border ${
-            assigneeFilter === 'unassigned'
-              ? 'bg-bg-surface-active border-border-focus text-text-primary'
-              : 'border-border-default text-text-secondary hover:bg-bg-surface-hover'
-          }`}
         >
           Unassigned
         </button>
         {members.map((member) => (
           <button
             key={member.id}
+            style={chipStyle(assigneeFilter === member.id)}
             onClick={() => setAssigneeFilter(assigneeFilter === member.id ? null : member.id)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[12px] transition-all duration-150 cursor-pointer border ${
-              assigneeFilter === member.id
-                ? 'bg-bg-surface-active border-border-focus'
-                : 'border-border-default hover:bg-bg-surface-hover'
-            }`}
           >
             <Avatar name={member.display_name} url={member.avatar_url} size={18} />
-            <span className="text-text-secondary">{member.display_name}</span>
+            {member.display_name}
           </button>
         ))}
       </div>

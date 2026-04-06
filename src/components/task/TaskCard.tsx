@@ -3,6 +3,7 @@ import { CategoryPill } from './CategoryPill';
 import { Avatar, EmptyAvatar } from '../ui/Avatar';
 import { SubtaskCount } from './SubtaskList';
 import { useTaskStore } from '../../stores/taskStore';
+import { colors, font } from '../../lib/theme';
 import type { Task, Profile } from '../../lib/types';
 
 interface TaskCardProps {
@@ -14,45 +15,49 @@ interface TaskCardProps {
   onMouseDown?: (e: React.MouseEvent) => void;
 }
 
-export function TaskCard({
-  task,
-  members,
-  selected,
-  style,
-  onDoubleClick,
-  onMouseDown,
-}: TaskCardProps) {
+export function TaskCard({ task, members, selected, style: posStyle, onDoubleClick, onMouseDown }: TaskCardProps) {
   const { cycleStatus } = useTaskStore();
   const assigned = members.find((m) => m.id === task.assigned_to);
 
   return (
     <div
-      className={`absolute bg-bg-surface border rounded-[8px] p-3 select-none transition-shadow duration-150 ${
-        selected ? 'border-border-focus shadow-[0_0_0_1px_var(--color-border-focus)]' : 'border-border-default'
-      } ${task.status === 'done' ? 'opacity-60' : ''}`}
-      style={{ width: 280, ...style }}
+      style={{
+        position: 'absolute',
+        width: 280,
+        backgroundColor: colors.bg.surface,
+        border: `1px solid ${selected ? colors.border.focus : colors.border.default}`,
+        borderRadius: '8px',
+        padding: '12px',
+        userSelect: 'none',
+        opacity: task.status === 'done' ? 0.6 : 1,
+        boxShadow: selected ? `0 0 0 1px ${colors.border.focus}` : 'none',
+        transition: 'box-shadow 150ms',
+        fontFamily: font.family,
+        ...posStyle,
+      }}
       onDoubleClick={onDoubleClick}
       onMouseDown={onMouseDown}
     >
-      <div className="flex items-start gap-2">
-        <StatusCircle
-          status={task.status}
-          onClick={() => cycleStatus(task.id)}
-          size={16}
-        />
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+        <StatusCircle status={task.status} onClick={() => cycleStatus(task.id)} size={16} />
         <span
-          className={`flex-1 text-[13px] font-medium leading-snug ${
-            task.status === 'done' ? 'text-text-muted line-through' : 'text-text-primary'
-          }`}
+          style={{
+            flex: 1,
+            fontSize: font.size.base,
+            fontWeight: font.weight.medium,
+            lineHeight: '1.4',
+            color: task.status === 'done' ? colors.text.muted : colors.text.primary,
+            textDecoration: task.status === 'done' ? 'line-through' : 'none',
+          }}
         >
           {task.title}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 mt-2.5">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' }}>
         <CategoryPill category={task.category} />
         <SubtaskCount subtasks={task.subtasks || []} />
-        <div className="flex-1" />
+        <div style={{ flex: 1 }} />
         {assigned ? (
           <Avatar name={assigned.display_name} url={assigned.avatar_url} size={20} />
         ) : (

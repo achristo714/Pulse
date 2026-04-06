@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { ViewToggle } from './ViewToggle';
 import { useUIStore } from '../../stores/uiStore';
 import { useTaskStore } from '../../stores/taskStore';
+import { colors, font } from '../../lib/theme';
 import type { Profile } from '../../lib/types';
 
 interface TopBarProps {
@@ -27,43 +27,149 @@ export function TopBar({ profile, onSignOut }: TopBarProps) {
   };
 
   return (
-    <div className="h-14 bg-bg-surface border-b border-border-default flex items-center px-4 gap-4 shrink-0">
-      <h1 className="text-[20px] font-semibold tracking-[-0.01em] text-text-primary">Pulse</h1>
+    <div
+      style={{
+        height: '56px',
+        backgroundColor: colors.bg.surface,
+        borderBottom: `1px solid ${colors.border.default}`,
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 16px',
+        gap: '16px',
+        flexShrink: 0,
+        fontFamily: font.family,
+      }}
+    >
+      <h1
+        style={{
+          fontSize: font.size.xl,
+          fontWeight: font.weight.semibold,
+          color: colors.text.primary,
+          letterSpacing: '-0.01em',
+        }}
+      >
+        Pulse
+      </h1>
 
-      <div className="flex-1 flex justify-center">
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
         <ViewToggle />
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => setReportModalOpen(true)}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={() => setReportModalOpen(true)}
+          style={{
+            padding: '6px 12px',
+            backgroundColor: 'transparent',
+            color: colors.text.secondary,
+            fontSize: font.size.sm,
+            fontWeight: font.weight.medium,
+            borderRadius: '6px',
+            border: `1px solid ${colors.border.default}`,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            transition: 'all 150ms ease-out',
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.borderColor = colors.border.focus;
+            e.currentTarget.style.color = colors.text.primary;
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.borderColor = colors.border.default;
+            e.currentTarget.style.color = colors.text.secondary;
+          }}
+        >
           Generate Report
-        </Button>
+        </button>
 
-        <Button size="sm" onClick={handleNewTask}>
+        <button
+          onClick={handleNewTask}
+          style={{
+            padding: '6px 14px',
+            backgroundColor: colors.accent.purple,
+            color: '#FFFFFF',
+            fontSize: font.size.sm,
+            fontWeight: font.weight.medium,
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            transition: 'background-color 150ms ease-out',
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = colors.accent.purpleHover)}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = colors.accent.purple)}
+        >
           + New Task
-        </Button>
+        </button>
 
-        <div className="relative">
+        <div style={{ position: 'relative' }}>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity duration-150"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              background: 'none',
+              border: 'none',
+              fontFamily: 'inherit',
+            }}
           >
-            <Avatar name={profile.display_name} url={profile.avatar_url} size={28} />
-            <span className="text-[13px] text-text-secondary hidden sm:inline">{profile.display_name}</span>
+            <Avatar name={profile.display_name} url={profile.avatar_url} size={30} />
+            <span style={{ fontSize: font.size.base, color: colors.text.secondary }}>
+              {profile.display_name}
+            </span>
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-bg-surface border border-border-default rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.4)] py-1 z-50">
-              <div className="px-3 py-2 border-b border-border-default">
-                <div className="text-[12px] text-text-primary font-medium">{profile.display_name}</div>
-                <div className="text-[11px] text-text-muted">{profile.role}</div>
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: '100%',
+                marginTop: '8px',
+                width: '200px',
+                backgroundColor: colors.bg.surface,
+                border: `1px solid ${colors.border.default}`,
+                borderRadius: '8px',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+                zIndex: 50,
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ padding: '12px 14px', borderBottom: `1px solid ${colors.border.default}` }}>
+                <div style={{ fontSize: font.size.base, color: colors.text.primary, fontWeight: font.weight.medium }}>
+                  {profile.display_name}
+                </div>
+                <div style={{ fontSize: font.size.xs, color: colors.text.muted, marginTop: '2px' }}>
+                  {profile.role}
+                </div>
               </div>
               <button
                 onClick={() => {
                   setShowMenu(false);
                   onSignOut();
                 }}
-                className="w-full text-left px-3 py-2 text-[12px] text-text-secondary hover:bg-bg-surface-hover hover:text-text-primary transition-colors duration-150 cursor-pointer"
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '10px 14px',
+                  fontSize: font.size.sm,
+                  color: colors.text.secondary,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 150ms',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.bg.surfaceHover;
+                  e.currentTarget.style.color = colors.text.primary;
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = colors.text.secondary;
+                }}
               >
                 Sign Out
               </button>

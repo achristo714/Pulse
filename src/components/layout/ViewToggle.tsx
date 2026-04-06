@@ -1,28 +1,36 @@
 import { useUIStore } from '../../stores/uiStore';
+import { colors, font } from '../../lib/theme';
 
 export function ViewToggle() {
   const { viewMode, setViewMode } = useUIStore();
 
+  const btnStyle = (active: boolean): React.CSSProperties => ({
+    padding: '5px 16px',
+    borderRadius: '20px',
+    fontSize: font.size.sm,
+    fontWeight: font.weight.medium,
+    color: active ? colors.text.primary : colors.text.secondary,
+    backgroundColor: active ? colors.bg.surfaceActive : 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 150ms ease-out',
+  });
+
   return (
-    <div className="flex bg-bg-primary rounded-full p-0.5 border border-border-default">
-      <button
-        onClick={() => setViewMode('list')}
-        className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all duration-150 cursor-pointer ${
-          viewMode === 'list'
-            ? 'bg-bg-surface-active text-text-primary'
-            : 'text-text-secondary hover:text-text-primary'
-        }`}
-      >
+    <div
+      style={{
+        display: 'flex',
+        backgroundColor: colors.bg.primary,
+        borderRadius: '20px',
+        padding: '2px',
+        border: `1px solid ${colors.border.default}`,
+      }}
+    >
+      <button style={btnStyle(viewMode === 'list')} onClick={() => setViewMode('list')}>
         List
       </button>
-      <button
-        onClick={() => setViewMode('canvas')}
-        className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all duration-150 cursor-pointer ${
-          viewMode === 'canvas'
-            ? 'bg-bg-surface-active text-text-primary'
-            : 'text-text-secondary hover:text-text-primary'
-        }`}
-      >
+      <button style={btnStyle(viewMode === 'canvas')} onClick={() => setViewMode('canvas')}>
         Canvas
       </button>
     </div>
