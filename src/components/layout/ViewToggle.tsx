@@ -2,32 +2,61 @@ import { useUIStore } from '../../stores/uiStore';
 import { colors, font } from '../../lib/theme';
 
 const TABS = [
-  { key: 'list' as const, label: 'Tasks' },
-  { key: 'canvas' as const, label: 'Canvas' },
-  { key: 'goals' as const, label: 'Goals' },
-  { key: 'knowledge' as const, label: 'Knowledge' },
-  { key: 'vault' as const, label: 'Vault' },
+  { key: 'list' as const, label: 'Tasks', accent: '#7C3AED' },
+  { key: 'canvas' as const, label: 'Canvas', accent: '#818CF8' },
+  { key: 'goals' as const, label: 'Goals', accent: '#F59E0B' },
+  { key: 'knowledge' as const, label: 'Knowledge', accent: '#34D399' },
+  { key: 'vault' as const, label: 'Vault', accent: '#F472B6' },
 ];
 
 export function ViewToggle() {
   const { viewMode, setViewMode } = useUIStore();
 
   return (
-    <div style={{ display: 'flex', backgroundColor: colors.bg.primary, borderRadius: '20px', padding: '2px', border: `1px solid ${colors.border.default}` }}>
-      {TABS.map((tab) => (
-        <button
-          key={tab.key}
-          style={{
-            padding: '5px 14px', borderRadius: '20px', fontSize: font.size.sm, fontWeight: font.weight.medium,
-            color: viewMode === tab.key ? colors.text.primary : colors.text.secondary,
-            backgroundColor: viewMode === tab.key ? colors.bg.surfaceActive : 'transparent',
-            border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms ease-out',
-          }}
-          onClick={() => setViewMode(tab.key)}
-        >
-          {tab.label}
-        </button>
-      ))}
+    <div style={{
+      display: 'flex',
+      backgroundColor: colors.bg.primary,
+      borderRadius: '22px',
+      padding: '3px',
+      border: `1px solid ${colors.border.default}`,
+      gap: '2px',
+    }}>
+      {TABS.map((tab) => {
+        const active = viewMode === tab.key;
+        return (
+          <button
+            key={tab.key}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '18px',
+              fontSize: font.size.sm,
+              fontWeight: font.weight.medium,
+              color: active ? '#fff' : colors.text.secondary,
+              backgroundColor: active ? tab.accent : 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 200ms ease-out',
+              boxShadow: active ? `0 2px 8px ${tab.accent}30` : 'none',
+            }}
+            onClick={() => setViewMode(tab.key)}
+            onMouseOver={(e) => {
+              if (!active) {
+                e.currentTarget.style.color = tab.accent;
+                e.currentTarget.style.backgroundColor = `${tab.accent}10`;
+              }
+            }}
+            onMouseOut={(e) => {
+              if (!active) {
+                e.currentTarget.style.color = colors.text.secondary;
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
