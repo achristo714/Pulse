@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../stores/taskStore';
+import { CategoryPicker } from './CategoryPicker';
 import { colors, font } from '../../lib/theme';
 import type { TaskCategory } from '../../lib/types';
 
@@ -7,9 +8,10 @@ interface NewTaskInputProps {
   teamId: string;
   createdBy: string;
   category: TaskCategory;
+  onCategoryChange: (cat: TaskCategory) => void;
 }
 
-export function NewTaskInput({ teamId, createdBy, category }: NewTaskInputProps) {
+export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: NewTaskInputProps) {
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [showDate, setShowDate] = useState(false);
@@ -71,6 +73,9 @@ export function NewTaskInput({ teamId, createdBy, category }: NewTaskInputProps)
         }}
       />
 
+      {/* Category dots */}
+      <CategoryPicker value={category} onChange={onCategoryChange} />
+
       {/* Date picker toggle */}
       {showDate ? (
         <input
@@ -101,7 +106,7 @@ export function NewTaskInput({ teamId, createdBy, category }: NewTaskInputProps)
             height: '28px',
             borderRadius: '6px',
             backgroundColor: 'transparent',
-            border: `1px solid transparent`,
+            border: '1px solid transparent',
             color: colors.text.muted,
             cursor: 'pointer',
             transition: 'all 150ms',

@@ -50,7 +50,7 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
         gridTemplateColumns: '20px 1fr auto 32px auto',
         alignItems: 'center',
         gap: '12px',
-        padding: '12px 28px',
+        padding: '12px 28px 12px 48px',
         backgroundColor: hovered ? colors.bg.surfaceHover : 'transparent',
         cursor: 'pointer',
         borderBottom: `1px solid ${colors.border.subtle}`,

@@ -1,5 +1,5 @@
 import { CATEGORIES, CATEGORY_CONFIG } from '../../lib/constants';
-import { colors, font } from '../../lib/theme';
+import { colors } from '../../lib/theme';
 import type { TaskCategory } from '../../lib/types';
 
 interface CategoryPickerProps {
@@ -9,19 +9,7 @@ interface CategoryPickerProps {
 
 export function CategoryPicker({ value, onChange }: CategoryPickerProps) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '6px 28px',
-        borderBottom: `1px solid ${colors.border.default}`,
-        fontFamily: font.family,
-      }}
-    >
-      <span style={{ fontSize: font.size.xs, color: colors.text.muted, marginRight: '6px' }}>
-        New task category:
-      </span>
+    <div style={{ display: 'flex', gap: '3px' }}>
       {CATEGORIES.map((cat) => {
         const active = value === cat;
         const config = CATEGORY_CONFIG[cat];
@@ -29,24 +17,28 @@ export function CategoryPicker({ value, onChange }: CategoryPickerProps) {
           <button
             key={cat}
             onClick={() => onChange(cat)}
+            title={config.label}
             style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
-              gap: '5px',
-              padding: '4px 10px',
-              borderRadius: '14px',
-              fontSize: font.size.xs,
-              fontWeight: font.weight.medium,
-              color: active ? config.color : colors.text.muted,
-              backgroundColor: active ? `${config.color}15` : 'transparent',
-              border: active ? `1px solid ${config.color}40` : '1px solid transparent',
+              justifyContent: 'center',
+              backgroundColor: active ? `${config.color}20` : 'transparent',
+              border: active ? `1.5px solid ${config.color}` : '1px solid transparent',
               cursor: 'pointer',
-              fontFamily: 'inherit',
               transition: 'all 150ms',
+              padding: 0,
+            }}
+            onMouseOver={(e) => {
+              if (!active) e.currentTarget.style.backgroundColor = colors.bg.surfaceHover;
+            }}
+            onMouseOut={(e) => {
+              if (!active) e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: config.color }} />
-            {config.label}
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: config.color }} />
           </button>
         );
       })}

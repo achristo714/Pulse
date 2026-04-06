@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { TopBar } from './components/layout/TopBar';
 import { FilterBar } from './components/layout/FilterBar';
 import { NewTaskInput } from './components/task/NewTaskInput';
-import { CategoryPicker } from './components/task/CategoryPicker';
 import { ListView } from './views/ListView';
 import { CanvasView } from './views/CanvasView';
 import { ReportModal } from './components/report/ReportModal';
@@ -75,8 +74,7 @@ export default function App() {
       {viewMode === 'list' && (
         <>
           <FilterBar members={[DEMO_PROFILE]} />
-          <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} category={newTaskCategory} />
-          <CategoryPicker value={newTaskCategory} onChange={setNewTaskCategory} />
+          <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} category={newTaskCategory} onCategoryChange={setNewTaskCategory} />
         </>
       )}
       {viewMode === 'list' ? (
