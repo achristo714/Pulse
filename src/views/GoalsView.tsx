@@ -73,6 +73,7 @@ function GoalSection({ title, goals, onUpdate, onDelete }: { title: string; goal
 function GoalCard({ goal, onUpdate, onDelete }: { goal: Goal; onUpdate: (id: string, u: Partial<Goal>) => Promise<void>; onDelete: (id: string) => Promise<void> }) {
   const [hovered, setHovered] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showSlider, setShowSlider] = useState(false);
   const catConfig = CATEGORY_CONFIG[goal.category];
 
   if (editing) {
@@ -103,8 +104,11 @@ function GoalCard({ goal, onUpdate, onDelete }: { goal: Goal; onUpdate: (id: str
         }}>{goal.status}</span>
       </div>
 
-      {/* Progress bar */}
-      <div style={{ marginBottom: '12px' }}>
+      {/* Progress bar — click to reveal slider */}
+      <div
+        onClick={() => setShowSlider(!showSlider)}
+        style={{ cursor: 'pointer', marginBottom: showSlider ? '4px' : '0' }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
           <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>Progress</span>
           <span style={{ fontSize: font.size.xs, color: catConfig.color, fontWeight: font.weight.medium }}>{goal.progress}%</span>
@@ -114,11 +118,14 @@ function GoalCard({ goal, onUpdate, onDelete }: { goal: Goal; onUpdate: (id: str
         </div>
       </div>
 
-      {/* Progress slider */}
-      <input type="range" min={0} max={100} value={goal.progress}
-        onChange={(e) => onUpdate(goal.id, { progress: parseInt(e.target.value), status: parseInt(e.target.value) === 100 ? 'completed' : 'active' })}
-        style={{ width: '100%', accentColor: catConfig.color, cursor: 'pointer', height: '4px' }}
-      />
+      {/* Slider — only visible when clicked */}
+      {showSlider && (
+        <input type="range" min={0} max={100} value={goal.progress}
+          onChange={(e) => onUpdate(goal.id, { progress: parseInt(e.target.value), status: parseInt(e.target.value) === 100 ? 'completed' : 'active' })}
+          onMouseUp={() => setShowSlider(false)}
+          style={{ width: '100%', accentColor: catConfig.color, cursor: 'pointer', height: '4px', marginTop: '4px' }}
+        />
+      )}
 
       {goal.target_date && (
         <div style={{ fontSize: font.size.xs, color: colors.text.muted, marginTop: '8px' }}>
