@@ -66,9 +66,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   createTask: async (task) => {
+    const title = task.title ? task.title.charAt(0).toUpperCase() + task.title.slice(1) : task.title;
     const { data, error } = await supabase
       .from('tasks')
-      .insert(task)
+      .insert({ ...task, title })
       .select(`
         *,
         subtasks (*),
@@ -84,6 +85,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   updateTask: async (id, updates) => {
+    if (updates.title) {
+      updates = { ...updates, title: updates.title.charAt(0).toUpperCase() + updates.title.slice(1) };
+    }
     const { error } = await supabase.from('tasks').update(updates).eq('id', id);
     if (error) return;
     set((s) => ({
