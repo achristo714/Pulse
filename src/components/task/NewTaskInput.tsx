@@ -11,6 +11,8 @@ interface NewTaskInputProps {
 
 export function NewTaskInput({ teamId, createdBy, category }: NewTaskInputProps) {
   const [title, setTitle] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [showDate, setShowDate] = useState(false);
   const [focused, setFocused] = useState(false);
   const createTask = useTaskStore((s) => s.createTask);
 
@@ -23,8 +25,11 @@ export function NewTaskInput({ teamId, createdBy, category }: NewTaskInputProps)
       title: trimmed,
       status: 'todo',
       category,
+      due_date: dueDate || null,
     });
     setTitle('');
+    setDueDate('');
+    setShowDate(false);
   };
 
   return (
@@ -65,6 +70,53 @@ export function NewTaskInput({ teamId, createdBy, category }: NewTaskInputProps)
           padding: '4px 0',
         }}
       />
+
+      {/* Date picker toggle */}
+      {showDate ? (
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          style={{
+            backgroundColor: colors.bg.primary,
+            border: `1px solid ${colors.border.default}`,
+            borderRadius: '4px',
+            padding: '3px 8px',
+            fontSize: font.size.xs,
+            color: colors.text.primary,
+            colorScheme: 'dark',
+            outline: 'none',
+            fontFamily: 'inherit',
+          }}
+        />
+      ) : (
+        <button
+          onClick={() => setShowDate(true)}
+          title="Add due date"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            backgroundColor: 'transparent',
+            border: `1px solid transparent`,
+            color: colors.text.muted,
+            cursor: 'pointer',
+            transition: 'all 150ms',
+            padding: 0,
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = colors.bg.surfaceHover; e.currentTarget.style.color = colors.text.secondary; }}
+          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text.muted; }}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M2 6.5H14" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M5 1.5V3.5M11 1.5V3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
 
       {title.trim() && (
         <button

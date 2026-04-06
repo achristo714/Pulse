@@ -46,7 +46,8 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}
       style={{
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: '20px 1fr auto 32px auto',
         alignItems: 'center',
         gap: '12px',
         padding: '12px 28px',
@@ -57,84 +58,94 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
         fontFamily: font.family,
       }}
     >
+      {/* Col 1: Status */}
       <StatusCircle status={task.status} category={task.category} size={20} onClick={() => cycleStatus(task.id)} />
 
-      {editing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          value={editTitle}
-          onChange={(e) => setEditTitle(e.target.value)}
-          onBlur={commitTitle}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitTitle();
-            if (e.key === 'Escape') { setEditTitle(task.title); setEditing(false); }
-          }}
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            minWidth: '120px',
-            maxWidth: '400px',
-            fontSize: font.size.base,
-            fontWeight: font.weight.medium,
-            color: colors.text.primary,
-            backgroundColor: colors.bg.primary,
-            border: `1px solid ${colors.border.focus}`,
-            borderRadius: '4px',
-            padding: '4px 10px',
-            outline: 'none',
-            fontFamily: 'inherit',
-          }}
-        />
-      ) : (
-        <span
-          onClick={handleTitleClick}
-          style={{
-            fontSize: font.size.base,
-            fontWeight: font.weight.medium,
-            color: task.status === 'done' ? colors.text.muted : colors.text.primary,
-            textDecoration: task.status === 'done' ? 'line-through' : 'none',
-            whiteSpace: 'nowrap',
-            cursor: 'text',
-            borderRadius: '4px',
-            padding: '4px 8px',
-            transition: 'background-color 150ms',
-          }}
-          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = colors.bg.surfaceActive; }}
-          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-        >
-          {task.title}
-        </span>
-      )}
+      {/* Col 2: Title + subtask count */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={editTitle}
+            onChange={(e) => setEditTitle(e.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitTitle();
+              if (e.key === 'Escape') { setEditTitle(task.title); setEditing(false); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              minWidth: '120px',
+              maxWidth: '400px',
+              fontSize: font.size.base,
+              fontWeight: font.weight.medium,
+              color: colors.text.primary,
+              backgroundColor: colors.bg.primary,
+              border: `1px solid ${colors.border.focus}`,
+              borderRadius: '4px',
+              padding: '4px 10px',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+        ) : (
+          <span
+            onClick={handleTitleClick}
+            style={{
+              fontSize: font.size.base,
+              fontWeight: font.weight.medium,
+              color: task.status === 'done' ? colors.text.muted : colors.text.primary,
+              textDecoration: task.status === 'done' ? 'line-through' : 'none',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              cursor: 'text',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              transition: 'background-color 150ms',
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = colors.bg.surfaceActive; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            {task.title}
+          </span>
+        )}
+        <SubtaskCount subtasks={task.subtasks || []} />
+      </div>
 
-      {/* Assignee — right after title on the left */}
-      <QuickAssign
-        assignedTo={task.assigned_to}
-        members={members}
-        onAssign={(id) => updateTask(task.id, { assigned_to: id })}
-      />
+      {/* Col 3: Icons (images/notes) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {hasImages && (
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke={colors.text.muted} strokeWidth="1.2" />
+            <circle cx="4.5" cy="5.5" r="1" stroke={colors.text.muted} strokeWidth="1" />
+          </svg>
+        )}
+        {hasNotes && (
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+            <path d="M3 4H11M3 7H9M3 10H7" stroke={colors.text.muted} strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        )}
+      </div>
 
-      <SubtaskCount subtasks={task.subtasks || []} />
+      {/* Col 4: Assignee (fixed width, aligned column) */}
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        {task.assigned_to ? (
+          <QuickAssign
+            assignedTo={task.assigned_to}
+            members={members}
+            onAssign={(id) => updateTask(task.id, { assigned_to: id })}
+          />
+        ) : (
+          <div style={{ width: '24px' }} />
+        )}
+      </div>
 
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
-
-      {/* Right side: date + icons */}
-      <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>
-        {task.due_date ? format(new Date(task.due_date), 'MMM d') : 'No date'}
+      {/* Col 5: Due date (only shown if set) */}
+      <span style={{ fontSize: font.size.xs, color: colors.text.muted, textAlign: 'right', minWidth: '50px' }}>
+        {task.due_date ? format(new Date(task.due_date), 'MMM d') : ''}
       </span>
-
-      {hasImages && (
-        <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-          <rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke={colors.text.muted} strokeWidth="1.2" />
-          <circle cx="4.5" cy="5.5" r="1" stroke={colors.text.muted} strokeWidth="1" />
-          <path d="M1.5 9.5L4.5 7L7 9L9.5 6.5L12.5 9.5" stroke={colors.text.muted} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
-      {hasNotes && (
-        <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-          <path d="M3 4H11M3 7H9M3 10H7" stroke={colors.text.muted} strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
-      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { CanvasToolbar } from './CanvasToolbar';
 import { Minimap } from './Minimap';
 import { useCanvasStore } from '../../stores/canvasStore';
 import { useTaskStore } from '../../stores/taskStore';
-import { CANVAS_GRID_SIZE } from '../../lib/constants';
+import { CANVAS_GRID_SIZE, CATEGORY_CONFIG } from '../../lib/constants';
 import { colors, font } from '../../lib/theme';
 import type { Profile, StickyColor } from '../../lib/types';
 
@@ -57,8 +57,19 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    setZoom(zoom + (e.deltaY > 0 ? -0.1 : 0.1));
-  }, [zoom, setZoom]);
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    const newZoom = Math.max(0.25, Math.min(4, zoom + delta));
+    const scale = newZoom / zoom;
+    // Adjust pan so zoom centers on cursor
+    const newPanX = mouseX - (mouseX - panX) * scale;
+    const newPanY = mouseY - (mouseY - panY) * scale;
+    setZoom(newZoom);
+    setPan(newPanX, newPanY);
+  }, [zoom, panX, panY, setZoom, setPan]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -193,6 +204,55 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
         {/* Transform layer */}
         <div style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0' }}>
+          {/* Connection arrows between task cards */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+            <defs>
+              <marker id="arrowHead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="rgba(124,58,237,0.3)" />
+              </marker>
+            </defs>
+            {(() => {
+              // Group task positions by category and draw arrows between them
+              const taskPositions = positions.filter((p) => p.item_type === 'task' && p.item_id);
+              const byCategory: Record<string, typeof taskPositions> = {};
+              for (const pos of taskPositions) {
+                const task = tasks.find((t) => t.id === pos.item_id);
+                if (!task) continue;
+                if (!byCategory[task.category]) byCategory[task.category] = [];
+                byCategory[task.category].push(pos);
+              }
+              const lines: React.ReactNode[] = [];
+              for (const cat of Object.keys(byCategory)) {
+                const catPositions = byCategory[cat];
+                if (catPositions.length < 2) continue;
+                // Sort by x position (left to right)
+                catPositions.sort((a, b) => a.x - b.x);
+                const catColor = CATEGORY_CONFIG[cat as keyof typeof CATEGORY_CONFIG]?.color || colors.accent.purple;
+                for (let i = 0; i < catPositions.length - 1; i++) {
+                  const from = catPositions[i];
+                  const to = catPositions[i + 1];
+                  const fromX = from.x + (from.width || 280);
+                  const fromY = from.y + 40;
+                  const toX = to.x;
+                  const toY = to.y + 40;
+                  const midX = (fromX + toX) / 2;
+                  lines.push(
+                    <path
+                      key={`${from.id}-${to.id}`}
+                      d={`M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`}
+                      stroke={catColor}
+                      strokeOpacity={0.25}
+                      strokeWidth={1.5}
+                      fill="none"
+                      markerEnd="url(#arrowHead)"
+                    />
+                  );
+                }
+              }
+              return lines;
+            })()}
+          </svg>
+
           {/* Task cards */}
           {positions.filter((p) => p.item_type === 'task' && p.item_id).map((pos) => {
             const task = tasks.find((t) => t.id === pos.item_id);
