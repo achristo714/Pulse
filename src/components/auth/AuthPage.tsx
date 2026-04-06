@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Button } from '../ui/Button';
 
 interface AuthPageProps {
   onSignIn: (email: string) => Promise<{ error: any }>;
@@ -22,34 +21,104 @@ export function AuthPage({ onSignIn }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-bg-primary flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-[28px] font-semibold tracking-[-0.02em] text-text-primary mb-2">
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#0F0F0F',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        fontFamily: "'Inter', system-ui, sans-serif",
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: '380px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h1
+            style={{
+              fontSize: '32px',
+              fontWeight: 600,
+              color: '#F5F5F5',
+              letterSpacing: '-0.02em',
+              marginBottom: '8px',
+            }}
+          >
             Pulse
           </h1>
-          <p className="text-text-secondary text-[13px]">
+          <p style={{ fontSize: '14px', color: '#A0A0A0' }}>
             Task management for Applied Technology
           </p>
         </div>
 
-        <div className="bg-bg-surface border border-border-default rounded-[12px] p-6">
+        <div
+          style={{
+            backgroundColor: '#1A1A1A',
+            border: '1px solid #2A2A2A',
+            borderRadius: '12px',
+            padding: '28px',
+          }}
+        >
           {sent ? (
-            <div className="text-center">
-              <div className="text-[16px] font-medium text-text-primary mb-2">Check your email</div>
-              <p className="text-text-secondary text-[13px]">
-                We sent a magic link to <strong className="text-text-primary">{email}</strong>
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '50%',
+                  backgroundColor: '#7C3AED20',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 16px',
+                  fontSize: '20px',
+                }}
+              >
+                ✉
+              </div>
+              <div
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 500,
+                  color: '#F5F5F5',
+                  marginBottom: '8px',
+                }}
+              >
+                Check your email
+              </div>
+              <p style={{ fontSize: '13px', color: '#A0A0A0', lineHeight: 1.5 }}>
+                We sent a magic link to{' '}
+                <strong style={{ color: '#F5F5F5' }}>{email}</strong>
               </p>
               <button
                 onClick={() => setSent(false)}
-                className="mt-4 text-accent-purple text-[13px] hover:underline cursor-pointer"
+                style={{
+                  marginTop: '16px',
+                  color: '#7C3AED',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                  fontFamily: 'inherit',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseOut={(e) => (e.currentTarget.style.textDecoration = 'none')}
               >
                 Use a different email
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              <label className="block text-[11px] font-medium text-text-secondary uppercase tracking-wider mb-2">
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  color: '#A0A0A0',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '8px',
+                }}
+              >
                 Email address
               </label>
               <input
@@ -58,12 +127,53 @@ export function AuthPage({ onSignIn }: AuthPageProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@kpf.com"
                 required
-                className="w-full bg-bg-primary border border-border-default rounded-[4px] px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none focus:border-border-focus transition-colors duration-150"
+                style={{
+                  width: '100%',
+                  backgroundColor: '#0F0F0F',
+                  border: '1px solid #2A2A2A',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  fontSize: '14px',
+                  color: '#F5F5F5',
+                  outline: 'none',
+                  transition: 'border-color 150ms ease-out',
+                  fontFamily: 'inherit',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = '#7C3AED')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#2A2A2A')}
               />
-              {error && <p className="text-red-400 text-[11px] mt-2">{error}</p>}
-              <Button type="submit" disabled={loading} className="w-full mt-4">
+              {error && (
+                <p style={{ color: '#F87171', fontSize: '12px', marginTop: '8px' }}>
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  marginTop: '16px',
+                  padding: '10px 16px',
+                  backgroundColor: '#7C3AED',
+                  color: '#FFFFFF',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.6 : 1,
+                  transition: 'background-color 150ms ease-out',
+                  fontFamily: 'inherit',
+                }}
+                onMouseOver={(e) => {
+                  if (!loading) e.currentTarget.style.backgroundColor = '#6D28D9';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#7C3AED';
+                }}
+              >
                 {loading ? 'Sending...' : 'Send Magic Link'}
-              </Button>
+              </button>
             </form>
           )}
         </div>

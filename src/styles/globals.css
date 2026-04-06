@@ -21,14 +21,6 @@
   --color-cat-admin: #FB923C;
 }
 
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-}
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -40,10 +32,20 @@ html, body, #root {
   width: 100%;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 13px;
-  color: var(--color-text-primary);
-  background-color: var(--color-bg-primary);
+  color: #F5F5F5;
+  background-color: #0F0F0F;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset input/select/textarea to inherit styles */
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
 }
 
 /* Scrollbar styling */
@@ -68,13 +70,13 @@ html, body, #root {
   min-height: 100px;
   padding: 8px;
   font-size: 13px;
-  color: var(--color-text-primary);
+  color: #F5F5F5;
   line-height: 1.6;
 }
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: var(--color-text-muted);
+  color: #666666;
   pointer-events: none;
   height: 0;
 }
