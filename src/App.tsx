@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { TopBar } from './components/layout/TopBar';
 import { FilterBar } from './components/layout/FilterBar';
+import { NewTaskInput } from './components/task/NewTaskInput';
 import { ListView } from './views/ListView';
 import { CanvasView } from './views/CanvasView';
 import { ReportModal } from './components/report/ReportModal';
@@ -30,7 +31,12 @@ export default function App() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
       <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} />
-      {viewMode === 'list' && <FilterBar members={[DEMO_PROFILE]} />}
+      {viewMode === 'list' && (
+        <>
+          <FilterBar members={[DEMO_PROFILE]} />
+          <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
+        </>
+      )}
       {viewMode === 'list' ? (
         <ListView members={[DEMO_PROFILE]} />
       ) : (

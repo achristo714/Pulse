@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { StatusCircle } from './StatusCircle';
 import { CategoryPill } from './CategoryPill';
 import { QuickAssign } from './QuickAssign';
@@ -17,8 +17,29 @@ interface TaskRowProps {
 export function TaskRow({ task, members, onClick }: TaskRowProps) {
   const { cycleStatus, updateTask } = useTaskStore();
   const [hovered, setHovered] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const inputRef = useRef<HTMLInputElement>(null);
   const hasNotes = !!task.notes;
   const hasImages = (task.images?.length || 0) > 0;
+
+  useEffect(() => { setEditTitle(task.title); }, [task.title]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleTitleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditing(true);
+  };
+
+  const commitTitle = () => {
+    setEditing(false);
+    const trimmed = editTitle.trim();
+    if (trimmed && trimmed !== task.title) {
+      updateTask(task.id, { title: trimmed });
+    } else {
+      setEditTitle(task.title);
+    }
+  };
 
   return (
     <div
@@ -39,20 +60,55 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
     >
       <StatusCircle status={task.status} onClick={() => cycleStatus(task.id)} />
 
-      <span
-        style={{
-          flex: 1,
-          fontSize: font.size.base,
-          fontWeight: font.weight.medium,
-          color: task.status === 'done' ? colors.text.muted : colors.text.primary,
-          textDecoration: task.status === 'done' ? 'line-through' : 'none',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {task.title}
-      </span>
+      {editing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onBlur={commitTitle}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitTitle();
+            if (e.key === 'Escape') { setEditTitle(task.title); setEditing(false); }
+          }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            flex: 1,
+            fontSize: font.size.base,
+            fontWeight: font.weight.medium,
+            color: colors.text.primary,
+            backgroundColor: colors.bg.primary,
+            border: `1px solid ${colors.border.focus}`,
+            borderRadius: '4px',
+            padding: '2px 8px',
+            outline: 'none',
+            fontFamily: 'inherit',
+          }}
+        />
+      ) : (
+        <span
+          onClick={handleTitleClick}
+          style={{
+            flex: 1,
+            fontSize: font.size.base,
+            fontWeight: font.weight.medium,
+            color: task.status === 'done' ? colors.text.muted : colors.text.primary,
+            textDecoration: task.status === 'done' ? 'line-through' : 'none',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            cursor: 'text',
+            borderRadius: '4px',
+            padding: '2px 8px',
+            margin: '-2px -8px',
+            transition: 'background-color 150ms',
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = colors.bg.surfaceActive; }}
+          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+        >
+          {task.title}
+        </span>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
         <SubtaskCount subtasks={task.subtasks || []} />
