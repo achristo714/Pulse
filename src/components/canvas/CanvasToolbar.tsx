@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useCanvasStore } from '../../stores/canvasStore';
+import { colors, font } from '../../lib/theme';
 
 interface CanvasToolbarProps {
   onZoomToFit: () => void;
@@ -9,41 +11,65 @@ export function CanvasToolbar({ onZoomToFit, onResetView }: CanvasToolbarProps) 
   const { zoom, setZoom } = useCanvasStore();
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-bg-surface border border-border-default rounded-[8px] px-2 py-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.3)] z-20" style={{ marginLeft: 130 }}>
-      <button
-        onClick={() => setZoom(zoom - 0.1)}
-        className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover rounded transition-colors duration-150 cursor-pointer text-[14px]"
-        title="Zoom out"
-      >
-        −
-      </button>
-      <span className="text-[11px] text-text-muted w-10 text-center">
+    <div
+      style={{
+        position: 'absolute',
+        bottom: '16px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        marginLeft: '130px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        backgroundColor: colors.bg.surface,
+        border: `1px solid ${colors.border.default}`,
+        borderRadius: '8px',
+        padding: '6px 8px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+        zIndex: 20,
+        fontFamily: font.family,
+      }}
+    >
+      <ToolbarBtn onClick={() => setZoom(zoom - 0.1)} title="Zoom out">−</ToolbarBtn>
+      <span style={{ fontSize: font.size.xs, color: colors.text.muted, width: '40px', textAlign: 'center' }}>
         {Math.round(zoom * 100)}%
       </span>
-      <button
-        onClick={() => setZoom(zoom + 0.1)}
-        className="w-7 h-7 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover rounded transition-colors duration-150 cursor-pointer text-[14px]"
-        title="Zoom in"
-      >
-        +
-      </button>
+      <ToolbarBtn onClick={() => setZoom(zoom + 0.1)} title="Zoom in">+</ToolbarBtn>
 
-      <div className="w-px h-4 bg-border-default mx-1" />
+      <div style={{ width: '1px', height: '16px', backgroundColor: colors.border.default, margin: '0 4px' }} />
 
-      <button
-        onClick={onZoomToFit}
-        className="px-2 h-7 flex items-center text-[11px] text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover rounded transition-colors duration-150 cursor-pointer"
-        title="Zoom to fit"
-      >
-        Fit
-      </button>
-      <button
-        onClick={onResetView}
-        className="px-2 h-7 flex items-center text-[11px] text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover rounded transition-colors duration-150 cursor-pointer"
-        title="Reset view"
-      >
-        Reset
-      </button>
+      <ToolbarBtn onClick={onZoomToFit} title="Zoom to fit" wide>Fit</ToolbarBtn>
+      <ToolbarBtn onClick={onResetView} title="Reset view" wide>Reset</ToolbarBtn>
     </div>
+  );
+}
+
+function ToolbarBtn({ onClick, title, children, wide }: { onClick: () => void; title: string; children: React.ReactNode; wide?: boolean }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      onMouseOver={() => setHovered(true)}
+      onMouseOut={() => setHovered(false)}
+      style={{
+        width: wide ? 'auto' : '28px',
+        height: '28px',
+        padding: wide ? '0 8px' : 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: wide ? font.size.xs : '14px',
+        color: hovered ? colors.text.primary : colors.text.secondary,
+        backgroundColor: hovered ? colors.bg.surfaceHover : 'transparent',
+        borderRadius: '4px',
+        border: 'none',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        transition: 'all 150ms',
+      }}
+    >
+      {children}
+    </button>
   );
 }

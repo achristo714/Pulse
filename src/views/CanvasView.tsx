@@ -23,7 +23,7 @@ export function CanvasView({ teamId, userId, members }: CanvasViewProps) {
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
 
   return (
-    <div className="flex-1 relative overflow-hidden">
+    <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
       <InfiniteCanvas
         teamId={teamId}
         userId={userId}
