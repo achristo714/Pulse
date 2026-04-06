@@ -23,7 +23,8 @@ export const useGoalStore = create<GoalState>((set) => ({
 
   createGoal: async (goal) => {
     const { data, error } = await supabase.from('goals').insert(goal).select().single();
-    if (error || !data) return null;
+    if (error) { console.error('Goal create failed:', error.message); alert(`Goal save failed: ${error.message}`); return null; }
+    if (!data) return null;
     set((s) => ({ goals: [data, ...s.goals] }));
     return data;
   },
