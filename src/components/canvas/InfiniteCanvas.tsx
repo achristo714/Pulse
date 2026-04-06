@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { TaskCard } from '../task/TaskCard';
 import { StickyNoteCard } from './StickyNote';
 import { CanvasInbox } from './CanvasInbox';
@@ -44,11 +44,35 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   // Multi-drag
   const [multiDrag, setMultiDrag] = useState<{ startX: number; startY: number; origins: Map<string, { x: number; y: number }> } | null>(null);
 
+  // Global mouseup listener for connection drawing (events don't bubble from cards)
+  useEffect(() => {
+    if (!connectingFrom) return;
+    const handler = (e: MouseEvent) => {
+      const mousePos = screenToCanvasRef.current(e.clientX, e.clientY);
+      const targetPos = positions.find((p) => {
+        const w = p.width || 280;
+        const h = p.height || 120;
+        return mousePos.x >= p.x - 10 && mousePos.x <= p.x + w + 10 && mousePos.y >= p.y - 10 && mousePos.y <= p.y + h + 10;
+      });
+      if (targetPos && targetPos.id !== connectingFrom) {
+        createConnection(teamId, connectingFrom, targetPos.id);
+      }
+      setConnectingFrom(null);
+      setConnectingMouse(null);
+    };
+    window.addEventListener('mouseup', handler);
+    return () => window.removeEventListener('mouseup', handler);
+  }, [connectingFrom, positions, createConnection, teamId]);
+
+  // Keep a ref to screenToCanvas so the effect can use it without re-subscribing
+  const screenToCanvasRef = useRef((_x: number, _y: number) => ({ x: 0, y: 0 }));
+
   const screenToCanvas = useCallback((clientX: number, clientY: number) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
     return { x: (clientX - rect.left - panX) / zoom, y: (clientY - rect.top - panY) / zoom };
   }, [panX, panY, zoom]);
+  screenToCanvasRef.current = screenToCanvas;
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 1) {
@@ -110,11 +134,11 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     // Finish connection drawing
     if (connectingFrom && e) {
       const mousePos = screenToCanvas(e.clientX, e.clientY);
-      // Find which card the mouse is over
+      // Find which card the mouse is over — generous hit area
       const targetPos = positions.find((p) => {
         const w = p.width || 280;
-        const h = 80;
-        return mousePos.x >= p.x && mousePos.x <= p.x + w && mousePos.y >= p.y && mousePos.y <= p.y + h;
+        const h = p.height || 120;
+        return mousePos.x >= p.x - 10 && mousePos.x <= p.x + w + 10 && mousePos.y >= p.y - 10 && mousePos.y <= p.y + h + 10;
       });
       if (targetPos && targetPos.id !== connectingFrom) {
         createConnection(teamId, connectingFrom, targetPos.id);
@@ -271,7 +295,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
       <div
         ref={canvasRef}
-        style={{ position: 'absolute', inset: 0, left: 260, cursor: isPanning ? 'grabbing' : isSelecting ? 'crosshair' : 'grab' }}
+        style={{ position: 'absolute', inset: 0, left: 260, cursor: connectingFrom ? 'crosshair' : isPanning ? 'grabbing' : isSelecting ? 'crosshair' : 'grab' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
