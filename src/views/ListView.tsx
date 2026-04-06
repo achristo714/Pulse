@@ -9,9 +9,10 @@ import type { Profile, Task, TaskCategory } from '../lib/types';
 
 interface ListViewProps {
   members: Profile[];
+  searchQuery?: string;
 }
 
-export function ListView({ members }: ListViewProps) {
+export function ListView({ members, searchQuery = '' }: ListViewProps) {
   const { tasks, selectedTaskId, setSelectedTask } = useTaskStore();
   const { categoryFilters, statusFilters, assigneeFilter, collapsedCategories, toggleCategoryCollapse } = useUIStore();
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -23,9 +24,10 @@ export function ListView({ members }: ListViewProps) {
       if (statusFilters.length > 0 && !statusFilters.includes(t.status)) return false;
       if (assigneeFilter === 'unassigned' && t.assigned_to !== null) return false;
       if (assigneeFilter && assigneeFilter !== 'unassigned' && t.assigned_to !== assigneeFilter) return false;
+      if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [tasks, categoryFilters, statusFilters, assigneeFilter, hideCompleted]);
+  }, [tasks, categoryFilters, statusFilters, assigneeFilter, hideCompleted, searchQuery]);
 
   const tasksByCategory = useMemo(() => {
     const grouped: Record<TaskCategory, Task[]> = { education: [], resources: [], support: [], admin: [] };

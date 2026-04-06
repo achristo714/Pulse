@@ -180,8 +180,13 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     createTaskPosition(teamId, taskId, snapped.x, snapped.y);
   }, [screenToCanvas, snapToGrid, createTaskPosition, teamId]);
 
-  // Place All — auto-layout by category
+  // Place All — find empty space below/right of existing cards
   const handlePlaceAll = useCallback(async (unplacedTasks: typeof tasks) => {
+    // Find the bottom edge of all existing positions to place below
+    const maxY = positions.length > 0
+      ? Math.max(...positions.map((p) => p.y + (p.height || 100))) + 60
+      : 40;
+
     const byCategory: Record<string, typeof tasks> = {};
     for (const t of unplacedTasks) {
       if (!byCategory[t.category]) byCategory[t.category] = [];
@@ -192,11 +197,29 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
       const catTasks = byCategory[cat];
       if (!catTasks || catTasks.length === 0) continue;
       for (let i = 0; i < catTasks.length; i++) {
-        await createTaskPosition(teamId, catTasks[i].id, groupX, 40 + i * 120);
+        await createTaskPosition(teamId, catTasks[i].id, groupX, maxY + i * 120);
       }
-      groupX += 340; // next category column
+      groupX += 340;
     }
-  }, [createTaskPosition, teamId]);
+  }, [createTaskPosition, teamId, positions]);
+
+  // Stash a single card back to inbox (delete its canvas position)
+  const { deletePosition } = useCanvasStore();
+  const handleStash = useCallback((positionId: string) => {
+    deletePosition(positionId);
+    setSelectedIds((prev) => { const next = new Set(prev); next.delete(positionId); return next; });
+    setSelectedItem(null);
+  }, [deletePosition, setSelectedItem]);
+
+  // Stash all cards back to inbox
+  const handleStashAll = useCallback(() => {
+    const taskPositions = positions.filter((p) => p.item_type === 'task');
+    for (const pos of taskPositions) {
+      deletePosition(pos.id);
+    }
+    setSelectedIds(new Set());
+    setSelectedItem(null);
+  }, [positions, deletePosition, setSelectedItem]);
 
   const placedTaskIds = new Set(positions.filter((p) => p.item_type === 'task').map((p) => p.item_id));
   const unplacedTasks = tasks.filter((t) => !placedTaskIds.has(t.id));
@@ -212,7 +235,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
   return (
     <div style={{ position: 'relative', flex: 1, overflow: 'hidden', backgroundColor: colors.bg.primary, height: '100%' }}>
-      <CanvasInbox tasks={unplacedTasks} members={members} teamId={teamId} onPlaceAll={() => handlePlaceAll(unplacedTasks)} />
+      <CanvasInbox tasks={unplacedTasks} members={members} teamId={teamId} onPlaceAll={() => handlePlaceAll(unplacedTasks)} onStashAll={handleStashAll} placedCount={positions.filter((p) => p.item_type === 'task').length} />
 
       <div
         ref={canvasRef}
@@ -257,11 +280,11 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
         {/* Transform layer */}
         <div style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0' }}>
-          {/* Connection arrows */}
+          {/* Connection arrows — only between nearby same-category cards */}
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
             <defs>
-              <marker id="arrowHead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                <polygon points="0 0, 8 3, 0 6" fill="rgba(124,58,237,0.3)" />
+              <marker id="arrowHead" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
+                <polygon points="0 0, 6 2.5, 0 5" fill="rgba(124,58,237,0.25)" />
               </marker>
             </defs>
             {(() => {
@@ -281,13 +304,16 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                 const catColor = CATEGORY_CONFIG[cat as keyof typeof CATEGORY_CONFIG]?.color || colors.accent.purple;
                 for (let i = 0; i < cp.length - 1; i++) {
                   const from = cp[i]; const to = cp[i + 1];
+                  // Only draw arrow if cards are within 600px of each other
+                  const dist = Math.sqrt(Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2));
+                  if (dist > 600) continue;
                   const fromX = from.x + (from.width || 280) / 2;
                   const fromY = from.y + 80;
                   const toX = to.x + (to.width || 280) / 2;
                   const toY = to.y;
                   const midY = (fromY + toY) / 2;
                   lines.push(
-                    <path key={`${from.id}-${to.id}`} d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`} stroke={catColor} strokeOpacity={0.3} strokeWidth={1.5} fill="none" markerEnd="url(#arrowHead)" />
+                    <path key={`${from.id}-${to.id}`} d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`} stroke={catColor} strokeOpacity={0.2} strokeWidth={1.5} fill="none" markerEnd="url(#arrowHead)" strokeDasharray="6 4" />
                   );
                 }
               }
@@ -388,6 +414,12 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
             zIndex: 50,
           }}>
             <CtxBtn onClick={() => handleAddSticky('#7C3AED')}>Add Sticky Note</CtxBtn>
+            {selectedIds.size > 0 && (
+              <CtxBtn onClick={() => { for (const id of selectedIds) handleStash(id); setContextMenu(null); }}>Stash Selected to Inbox</CtxBtn>
+            )}
+            {positions.filter((p) => p.item_type === 'task').length > 0 && (
+              <CtxBtn onClick={() => { handleStashAll(); setContextMenu(null); }}>Stash All to Inbox</CtxBtn>
+            )}
           </div>
         )}
       </div>

@@ -10,9 +10,11 @@ interface CanvasInboxProps {
   members: Profile[];
   teamId: string;
   onPlaceAll: () => void;
+  onStashAll: () => void;
+  placedCount: number;
 }
 
-export function CanvasInbox({ tasks, onPlaceAll }: CanvasInboxProps) {
+export function CanvasInbox({ tasks, onPlaceAll, onStashAll, placedCount }: CanvasInboxProps) {
   const cycleStatus = useTaskStore((s) => s.cycleStatus);
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
@@ -26,28 +28,33 @@ export function CanvasInbox({ tasks, onPlaceAll }: CanvasInboxProps) {
       backgroundColor: 'rgba(26,26,26,0.6)', borderRight: `1px dashed ${colors.border.default}`,
       overflowY: 'auto', zIndex: 10, fontFamily: font.family,
     }}>
-      <div style={{ padding: '14px 16px', borderBottom: `1px solid ${colors.border.default}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ padding: '14px 16px', borderBottom: `1px solid ${colors.border.default}`, display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: font.size.xs, fontWeight: font.weight.medium, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inbox</span>
         <span style={{ fontSize: font.size.xs, color: colors.text.muted, backgroundColor: colors.bg.surfaceActive, padding: '1px 8px', borderRadius: '10px' }}>{tasks.length}</span>
         <div style={{ flex: 1 }} />
         {tasks.length > 0 && (
-          <button
-            onClick={onPlaceAll}
-            style={{
-              padding: '4px 10px', fontSize: font.size.xs, fontWeight: font.weight.medium,
-              color: colors.accent.purple, backgroundColor: colors.accent.purpleSubtle,
-              border: `1px solid ${colors.accent.purple}40`, borderRadius: '6px',
-              cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
-            }}
-          >
-            Place All
-          </button>
+          <button onClick={onPlaceAll} style={{
+            padding: '3px 8px', fontSize: font.size.xs, fontWeight: font.weight.medium,
+            color: colors.accent.purple, backgroundColor: colors.accent.purpleSubtle,
+            border: `1px solid ${colors.accent.purple}40`, borderRadius: '6px',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>Place All</button>
+        )}
+        {placedCount > 0 && (
+          <button onClick={onStashAll} style={{
+            padding: '3px 8px', fontSize: font.size.xs, fontWeight: font.weight.medium,
+            color: colors.text.muted, backgroundColor: 'transparent',
+            border: `1px solid ${colors.border.default}`, borderRadius: '6px',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>Stash All</button>
         )}
       </div>
 
       <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {tasks.length === 0 && (
-          <p style={{ fontSize: font.size.sm, color: colors.text.muted, textAlign: 'center', padding: '32px 0' }}>All tasks placed on canvas</p>
+          <p style={{ fontSize: font.size.sm, color: colors.text.muted, textAlign: 'center', padding: '32px 0' }}>
+            {placedCount > 0 ? 'All tasks on canvas' : 'No tasks yet'}
+          </p>
         )}
         {tasks.map((task) => (
           <InboxCard key={task.id} task={task} onDragStart={handleDragStart} onCycleStatus={cycleStatus} />

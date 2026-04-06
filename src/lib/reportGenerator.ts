@@ -8,13 +8,12 @@ export function generateReportMarkdown(
   endDate: Date,
   members: Profile[]
 ): string {
-  const completedTasks = tasks.filter(
-    (t) =>
-      t.status === 'done' &&
-      t.completed_at &&
-      new Date(t.completed_at) >= startDate &&
-      new Date(t.completed_at) <= endDate
-  );
+  const completedTasks = tasks.filter((t) => {
+    if (t.status !== 'done') return false;
+    // Use completed_at if available, otherwise fall back to updated_at
+    const doneDate = t.completed_at ? new Date(t.completed_at) : new Date(t.updated_at);
+    return doneDate >= startDate && doneDate <= endDate;
+  });
 
   const byCategory: Record<TaskCategory, Task[]> = {
     education: [],
@@ -52,7 +51,7 @@ export function generateReportMarkdown(
     }
     for (const task of catTasks) {
       const assignee = task.assigned_to ? (memberMap.get(task.assigned_to) || 'Unknown') : 'Unassigned';
-      const completedDate = task.completed_at ? format(new Date(task.completed_at), 'MMM d') : '';
+      const completedDate = format(new Date(task.completed_at || task.updated_at), 'MMM d');
       md += `- ${task.title} - ${assignee} - Completed ${completedDate}\n`;
       for (const st of task.subtasks || []) {
         md += `  - [${st.is_done ? 'x' : ' '}] ${st.title}\n`;

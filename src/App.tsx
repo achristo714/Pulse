@@ -4,6 +4,7 @@ import { FilterBar } from './components/layout/FilterBar';
 import { NewTaskInput } from './components/task/NewTaskInput';
 import { ListView } from './views/ListView';
 import { CanvasView } from './views/CanvasView';
+import { VaultView } from './views/VaultView';
 import { ReportModal } from './components/report/ReportModal';
 import { useTaskStore } from './stores/taskStore';
 import { useUIStore } from './stores/uiStore';
@@ -46,24 +47,37 @@ export default function App() {
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
   const createTask = useTaskStore((s) => s.createTask);
   const tasks = useTaskStore((s) => s.tasks);
-  const { viewMode, reportModalOpen, setReportModalOpen } = useUIStore();
+  const { viewMode, setViewMode, reportModalOpen, setReportModalOpen } = useUIStore();
   const [seeding, setSeeding] = useState(false);
   const [newTaskCategory, setNewTaskCategory] = useState<TaskCategory>('admin');
+  const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => { fetchTasks(TEAM_ID); }, [fetchTasks]);
+
+  // Keyboard shortcuts
   useEffect(() => {
-    fetchTasks(TEAM_ID);
-  }, [fetchTasks]);
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, title: 'New Task', status: 'todo', category: newTaskCategory });
+      }
+      if (e.key === '1') setViewMode('list');
+      if (e.key === '2') setViewMode('canvas');
+      if (e.key === '3') setViewMode('vault');
+      if (e.key === 'r' && !e.metaKey && !e.ctrlKey) setReportModalOpen(true);
+      if (e.key === 'Escape') { setReportModalOpen(false); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [createTask, newTaskCategory, setViewMode, setReportModalOpen]);
 
   const handleSeed = async () => {
     setSeeding(true);
     for (const t of SEED_TASKS) {
-      await createTask({
-        team_id: TEAM_ID,
-        created_by: DEMO_PROFILE.id,
-        title: t.title,
-        status: t.status,
-        category: t.category,
-      });
+      await createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, title: t.title, status: t.status, category: t.category });
     }
     setSeeding(false);
   };
@@ -71,41 +85,44 @@ export default function App() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
       <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} />
+
       {viewMode === 'list' && (
         <>
-          <FilterBar members={[DEMO_PROFILE]} />
+          <FilterBar members={[DEMO_PROFILE]} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
           <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} category={newTaskCategory} onCategoryChange={setNewTaskCategory} />
         </>
       )}
+
       {viewMode === 'list' ? (
-        <ListView members={[DEMO_PROFILE]} />
-      ) : (
+        <ListView members={[DEMO_PROFILE]} searchQuery={searchQuery} />
+      ) : viewMode === 'canvas' ? (
         <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />
+      ) : (
+        <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />
       )}
+
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
 
+      {/* Keyboard shortcuts hint */}
+      <div style={{
+        position: 'fixed', bottom: '16px', right: '16px', fontSize: font.size.xs, color: colors.text.muted,
+        backgroundColor: 'rgba(26,26,26,0.9)', padding: '6px 10px', borderRadius: '6px',
+        border: `1px solid ${colors.border.default}`, zIndex: 5, lineHeight: 1.6,
+      }}>
+        <span style={{ color: colors.text.secondary }}>N</span> new task &nbsp;
+        <span style={{ color: colors.text.secondary }}>1/2/3</span> views &nbsp;
+        <span style={{ color: colors.text.secondary }}>R</span> report
+      </div>
+
       {tasks.length < 10 && (
-        <button
-          onClick={handleSeed}
-          disabled={seeding}
-          style={{
-            position: 'fixed',
-            bottom: '16px',
-            left: '16px',
-            padding: '8px 16px',
-            backgroundColor: seeding ? colors.bg.surfaceActive : colors.bg.surface,
-            color: seeding ? colors.text.muted : colors.accent.purple,
-            fontSize: font.size.sm,
-            fontWeight: font.weight.medium,
-            borderRadius: '8px',
-            border: `1px solid ${colors.border.default}`,
-            cursor: seeding ? 'not-allowed' : 'pointer',
-            fontFamily: font.family,
-            zIndex: 100,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-            transition: 'all 150ms',
-          }}
-        >
+        <button onClick={handleSeed} disabled={seeding} style={{
+          position: 'fixed', bottom: '16px', left: '16px', padding: '8px 16px',
+          backgroundColor: seeding ? colors.bg.surfaceActive : colors.bg.surface,
+          color: seeding ? colors.text.muted : colors.accent.purple,
+          fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '8px',
+          border: `1px solid ${colors.border.default}`, cursor: seeding ? 'not-allowed' : 'pointer',
+          fontFamily: font.family, zIndex: 100, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+        }}>
           {seeding ? 'Seeding...' : 'Seed 20 Demo Tasks'}
         </button>
       )}

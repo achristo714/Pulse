@@ -3,6 +3,7 @@ export type TaskCategory = 'education' | 'resources' | 'support' | 'admin';
 export type UserRole = 'admin' | 'member';
 export type CanvasItemType = 'task' | 'sticky';
 export type StickyColor = '#7C3AED' | '#F59E0B' | '#10B981' | '#F472B6' | '#6B7280';
+export type SubscriptionCategory = 'design' | 'engineering' | 'productivity' | 'cloud' | 'ai' | 'communication' | 'other';
 
 export interface Team {
   id: string;
@@ -32,7 +33,6 @@ export interface Task {
   completed_at: string | null;
   due_date: string | null;
   sort_order: number;
-  // Joined fields
   subtasks?: Subtask[];
   images?: TaskImage[];
   assigned_profile?: Profile | null;
@@ -76,6 +76,23 @@ export interface StickyNote {
   color: StickyColor;
   created_by: string;
   created_at: string;
+}
+
+export interface Subscription {
+  id: string;
+  team_id: string;
+  name: string;
+  url: string | null;
+  username: string | null;
+  password: string | null;
+  notes: string | null;
+  category: SubscriptionCategory;
+  cost: number | null;
+  billing_cycle: 'monthly' | 'yearly' | 'one-time';
+  renewal_date: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ReportData {

@@ -187,10 +187,19 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
           )}
         </div>
 
-        {/* Col 5: Due date */}
-        <span style={{ fontSize: font.size.xs, color: colors.text.muted, textAlign: 'right', minWidth: '50px' }}>
-          {task.due_date ? format(new Date(task.due_date), 'MMM d') : ''}
-        </span>
+        {/* Col 5: Due date with overdue indicator */}
+        {task.due_date ? (() => {
+          const isOverdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString());
+          return (
+            <span style={{
+              fontSize: font.size.xs, textAlign: 'right', minWidth: '50px',
+              color: isOverdue ? colors.danger : colors.text.muted,
+              fontWeight: isOverdue ? font.weight.medium : font.weight.normal,
+            }}>
+              {isOverdue && '⚠ '}{format(new Date(task.due_date), 'MMM d')}
+            </span>
+          );
+        })() : <span style={{ minWidth: '50px' }} />}
       </div>
 
       {/* Expanded subtasks */}
