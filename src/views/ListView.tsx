@@ -14,27 +14,77 @@ interface ListViewProps {
 export function ListView({ members }: ListViewProps) {
   const { tasks, selectedTaskId, setSelectedTask } = useTaskStore();
   const { categoryFilters, statusFilters, assigneeFilter, collapsedCategories, toggleCategoryCollapse } = useUIStore();
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
+      if (hideCompleted && t.status === 'done') return false;
       if (categoryFilters.length > 0 && !categoryFilters.includes(t.category)) return false;
       if (statusFilters.length > 0 && !statusFilters.includes(t.status)) return false;
       if (assigneeFilter === 'unassigned' && t.assigned_to !== null) return false;
       if (assigneeFilter && assigneeFilter !== 'unassigned' && t.assigned_to !== assigneeFilter) return false;
       return true;
     });
-  }, [tasks, categoryFilters, statusFilters, assigneeFilter]);
+  }, [tasks, categoryFilters, statusFilters, assigneeFilter, hideCompleted]);
 
   const tasksByCategory = useMemo(() => {
     const grouped: Record<TaskCategory, Task[]> = { education: [], resources: [], support: [], admin: [] };
     for (const task of filteredTasks) grouped[task.category].push(task);
+    // Sort: incomplete first, completed at bottom
+    for (const cat of CATEGORIES) {
+      grouped[cat].sort((a, b) => {
+        if (a.status === 'done' && b.status !== 'done') return 1;
+        if (a.status !== 'done' && b.status === 'done') return -1;
+        return 0;
+      });
+    }
     return grouped;
   }, [filteredTasks]);
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
+  const completedCount = tasks.filter((t) => t.status === 'done').length;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', fontFamily: font.family }}>
+      {/* Hide completed toggle */}
+      {completedCount > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '6px 28px', borderBottom: `1px solid ${colors.border.subtle}` }}>
+          <button
+            onClick={() => setHideCompleted(!hideCompleted)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: font.size.xs,
+              color: hideCompleted ? colors.accent.purple : colors.text.muted,
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              transition: 'all 150ms',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              {hideCompleted ? (
+                <>
+                  <path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" stroke="currentColor" strokeWidth="1.2" />
+                  <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
+                </>
+              ) : (
+                <>
+                  <path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" stroke="currentColor" strokeWidth="1.2" />
+                  <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
+                  <line x1="2" y1="12" x2="12" y2="2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </>
+              )}
+            </svg>
+            {hideCompleted ? `Show completed (${completedCount})` : `Hide completed (${completedCount})`}
+          </button>
+        </div>
+      )}
+
       {filteredTasks.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '250px', color: colors.text.muted }}>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ marginBottom: '12px', opacity: 0.3 }}>

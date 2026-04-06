@@ -9,8 +9,8 @@ interface StatusCircleProps {
 }
 
 export function StatusCircle({ status, size = 18, category, onClick }: StatusCircleProps) {
-  // WIP uses category color if provided, otherwise default
-  const color = status === 'wip' && category
+  // WIP and Done use category color if provided
+  const color = (status === 'wip' || status === 'done') && category
     ? CATEGORY_CONFIG[category].color
     : STATUS_CONFIG[status].color;
 
