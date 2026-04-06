@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #0F0F0F;
+  --color-bg-surface: #1A1A1A;
+  --color-bg-surface-hover: #242424;
+  --color-bg-surface-active: #2E2E2E;
+  --color-border-default: #2A2A2A;
+  --color-border-focus: #7C3AED;
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #A0A0A0;
+  --color-text-muted: #666666;
+  --color-accent-purple: #7C3AED;
+  --color-accent-purple-hover: #6D28D9;
+  --color-status-wip: #F59E0B;
+  --color-status-done: #10B981;
+  --color-status-todo: #6B7280;
+  --color-cat-education: #818CF8;
+  --color-cat-resources: #34D399;
+  --color-cat-support: #F472B6;
+  --color-cat-admin: #FB923C;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Tiptap editor styles */
+.tiptap {
+  outline: none;
+  min-height: 100px;
+  padding: 8px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-text-muted);
+  pointer-events: none;
+  height: 0;
+}
+.tiptap ul, .tiptap ol {
+  padding-left: 1.5em;
+}
+.tiptap strong {
+  font-weight: 600;
+}
