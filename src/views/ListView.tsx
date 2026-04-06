@@ -87,7 +87,7 @@ function CategoryHeader({ category, count, collapsed, onToggle }: { category: Ta
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        padding: '8px 16px',
+        padding: '8px 24px',
         backgroundColor: hovered ? colors.bg.surfaceHover : 'rgba(15,15,15,0.5)',
         border: 'none',
         cursor: 'pointer',

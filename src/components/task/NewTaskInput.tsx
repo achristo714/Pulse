@@ -30,7 +30,7 @@ export function NewTaskInput({ teamId, createdBy }: NewTaskInputProps) {
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
-        padding: '8px 16px',
+        padding: '8px 24px',
         borderBottom: `1px solid ${colors.border.default}`,
         fontFamily: font.family,
       }}

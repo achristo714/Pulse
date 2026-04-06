@@ -34,7 +34,7 @@ export function TopBar({ profile, onSignOut }: TopBarProps) {
         borderBottom: `1px solid ${colors.border.default}`,
         display: 'flex',
         alignItems: 'center',
-        padding: '0 16px',
+        padding: '0 24px',
         gap: '16px',
         flexShrink: 0,
         fontFamily: font.family,

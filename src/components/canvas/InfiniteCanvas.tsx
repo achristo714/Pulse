@@ -7,6 +7,7 @@ import { Minimap } from './Minimap';
 import { useCanvasStore } from '../../stores/canvasStore';
 import { useTaskStore } from '../../stores/taskStore';
 import { CANVAS_GRID_SIZE } from '../../lib/constants';
+import { colors, font } from '../../lib/theme';
 import type { Profile, StickyColor } from '../../lib/types';
 
 interface InfiniteCanvasProps {
@@ -27,16 +28,11 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
   const [isPanning, setIsPanning] = useState(false);
   const [dragState, setDragState] = useState<{
-    id: string;
-    startX: number;
-    startY: number;
-    origX: number;
-    origY: number;
+    id: string; startX: number; startY: number; origX: number; origY: number;
   } | null>(null);
-  const [_showMinimap] = useState(true);
+  const [showMinimap] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
-  // Pan with middle mouse or background drag
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 1 || (e.button === 0 && e.target === canvasRef.current)) {
       setIsPanning(true);
@@ -46,39 +42,29 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   }, [setSelectedItem]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isPanning) {
-      setPan(panX + e.movementX, panY + e.movementY);
-    }
+    if (isPanning) setPan(panX + e.movementX, panY + e.movementY);
     if (dragState) {
       const dx = (e.clientX - dragState.startX) / zoom;
       const dy = (e.clientY - dragState.startY) / zoom;
-      const newX = dragState.origX + dx;
-      const newY = dragState.origY + dy;
-      const snapped = e.shiftKey ? { x: newX, y: newY } : snapToGrid(newX, newY);
+      const snapped = e.shiftKey
+        ? { x: dragState.origX + dx, y: dragState.origY + dy }
+        : snapToGrid(dragState.origX + dx, dragState.origY + dy);
       updatePosition(dragState.id, { x: snapped.x, y: snapped.y });
     }
   }, [isPanning, panX, panY, zoom, dragState, setPan, snapToGrid, updatePosition]);
 
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-    setDragState(null);
-  }, []);
+  const handleMouseUp = useCallback(() => { setIsPanning(false); setDragState(null); }, []);
 
-  // Zoom with scroll wheel
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom(zoom + delta);
+    setZoom(zoom + (e.deltaY > 0 ? -0.1 : 0.1));
   }, [zoom, setZoom]);
 
-  // Context menu
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     if (e.target === canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left - panX) / zoom;
-      const y = (e.clientY - rect.top - panY) / zoom;
-      setContextMenu({ x, y });
+      setContextMenu({ x: (e.clientX - rect.left - panX) / zoom, y: (e.clientY - rect.top - panY) / zoom });
     }
   }, [panX, panY, zoom]);
 
@@ -88,41 +74,33 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     setContextMenu(null);
   }, [contextMenu, teamId, userId, createStickyNote]);
 
-  // Card drag start
   const handleCardMouseDown = useCallback((posId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedItem(posId);
     const pos = positions.find((p) => p.id === posId);
     if (!pos) return;
-    setDragState({
-      id: posId,
-      startX: e.clientX,
-      startY: e.clientY,
-      origX: pos.x,
-      origY: pos.y,
-    });
+    setDragState({ id: posId, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y });
   }, [positions, setSelectedItem]);
 
-  // Unplaced tasks (no canvas position)
-  const placedTaskIds = new Set(
-    positions.filter((p) => p.item_type === 'task').map((p) => p.item_id)
-  );
+  const placedTaskIds = new Set(positions.filter((p) => p.item_type === 'task').map((p) => p.item_id));
   const unplacedTasks = tasks.filter((t) => !placedTaskIds.has(t.id));
 
+  const gridStep = CANVAS_GRID_SIZE * zoom;
+
   return (
-    <div className="relative flex-1 overflow-hidden bg-bg-primary">
+    <div style={{ position: 'relative', flex: 1, overflow: 'hidden', backgroundColor: colors.bg.primary }}>
       {/* Inbox */}
-      <CanvasInbox
-        tasks={unplacedTasks}
-        members={members}
-        teamId={teamId}
-      />
+      <CanvasInbox tasks={unplacedTasks} members={members} teamId={teamId} />
 
       {/* Canvas */}
       <div
         ref={canvasRef}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing"
-        style={{ left: 260 }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          left: 260,
+          cursor: isPanning ? 'grabbing' : 'grab',
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -130,79 +108,127 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
         onWheel={handleWheel}
         onContextMenu={handleContextMenu}
       >
-        {/* Grid pattern */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-10">
+        {/* Dot grid — low opacity, Destiny-style geometric */}
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
           <defs>
+            {/* Small dot grid */}
             <pattern
-              id="grid"
-              width={CANVAS_GRID_SIZE * zoom}
-              height={CANVAS_GRID_SIZE * zoom}
+              id="dotGrid"
+              width={gridStep}
+              height={gridStep}
               patternUnits="userSpaceOnUse"
-              x={panX % (CANVAS_GRID_SIZE * zoom)}
-              y={panY % (CANVAS_GRID_SIZE * zoom)}
+              x={panX % gridStep}
+              y={panY % gridStep}
             >
-              <circle cx="1" cy="1" r="0.5" fill="#444" />
+              <circle cx={gridStep / 2} cy={gridStep / 2} r={0.6 * zoom} fill="rgba(255,255,255,0.06)" />
+            </pattern>
+            {/* Larger geometric crosshair grid */}
+            <pattern
+              id="crossGrid"
+              width={gridStep * 5}
+              height={gridStep * 5}
+              patternUnits="userSpaceOnUse"
+              x={panX % (gridStep * 5)}
+              y={panY % (gridStep * 5)}
+            >
+              {/* Intersection cross */}
+              <line x1={gridStep * 2.5 - 3 * zoom} y1={gridStep * 2.5} x2={gridStep * 2.5 + 3 * zoom} y2={gridStep * 2.5} stroke="rgba(124,58,237,0.08)" strokeWidth={0.5 * zoom} />
+              <line x1={gridStep * 2.5} y1={gridStep * 2.5 - 3 * zoom} x2={gridStep * 2.5} y2={gridStep * 2.5 + 3 * zoom} stroke="rgba(124,58,237,0.08)" strokeWidth={0.5 * zoom} />
+              {/* Corner diamond */}
+              <polygon
+                points={`${gridStep * 2.5},${gridStep * 2.5 - 1.5 * zoom} ${gridStep * 2.5 + 1.5 * zoom},${gridStep * 2.5} ${gridStep * 2.5},${gridStep * 2.5 + 1.5 * zoom} ${gridStep * 2.5 - 1.5 * zoom},${gridStep * 2.5}`}
+                fill="none"
+                stroke="rgba(124,58,237,0.06)"
+                strokeWidth={0.4 * zoom}
+              />
+            </pattern>
+            {/* Large section lines */}
+            <pattern
+              id="sectionGrid"
+              width={gridStep * 10}
+              height={gridStep * 10}
+              patternUnits="userSpaceOnUse"
+              x={panX % (gridStep * 10)}
+              y={panY % (gridStep * 10)}
+            >
+              {/* Thin section border lines */}
+              <line x1="0" y1="0" x2={gridStep * 10} y2="0" stroke="rgba(255,255,255,0.03)" strokeWidth={0.5} />
+              <line x1="0" y1="0" x2="0" y2={gridStep * 10} stroke="rgba(255,255,255,0.03)" strokeWidth={0.5} />
+              {/* Corner tick marks — geometric accent */}
+              <line x1="0" y1="0" x2={4 * zoom} y2="0" stroke="rgba(124,58,237,0.1)" strokeWidth={1} />
+              <line x1="0" y1="0" x2="0" y2={4 * zoom} stroke="rgba(124,58,237,0.1)" strokeWidth={1} />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
+          <rect width="100%" height="100%" fill="url(#dotGrid)" />
+          <rect width="100%" height="100%" fill="url(#crossGrid)" />
+          <rect width="100%" height="100%" fill="url(#sectionGrid)" />
         </svg>
 
         {/* Transform layer */}
-        <div
-          style={{
-            transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
-            transformOrigin: '0 0',
-          }}
-        >
+        <div style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0' }}>
           {/* Task cards */}
-          {positions
-            .filter((p) => p.item_type === 'task' && p.item_id)
-            .map((pos) => {
-              const task = tasks.find((t) => t.id === pos.item_id);
-              if (!task) return null;
-              return (
-                <TaskCard
-                  key={pos.id}
-                  task={task}
-                  members={members}
-                  selected={selectedItemId === pos.id}
-                  style={{ left: pos.x, top: pos.y }}
-                  onDoubleClick={() => onTaskDoubleClick(task.id)}
-                  onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
-                />
-              );
-            })}
+          {positions.filter((p) => p.item_type === 'task' && p.item_id).map((pos) => {
+            const task = tasks.find((t) => t.id === pos.item_id);
+            if (!task) return null;
+            return (
+              <TaskCard
+                key={pos.id}
+                task={task}
+                members={members}
+                selected={selectedItemId === pos.id}
+                style={{ left: pos.x, top: pos.y }}
+                onDoubleClick={() => onTaskDoubleClick(task.id)}
+                onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
+              />
+            );
+          })}
 
           {/* Sticky notes */}
-          {positions
-            .filter((p) => p.item_type === 'sticky')
-            .map((pos) => {
-              const note = stickyNotes.find((n) => n.canvas_position_id === pos.id);
-              if (!note) return null;
-              return (
-                <StickyNoteCard
-                  key={pos.id}
-                  note={note}
-                  position={pos}
-                  selected={selectedItemId === pos.id}
-                  onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
-                />
-              );
-            })}
+          {positions.filter((p) => p.item_type === 'sticky').map((pos) => {
+            const note = stickyNotes.find((n) => n.canvas_position_id === pos.id);
+            if (!note) return null;
+            return (
+              <StickyNoteCard
+                key={pos.id}
+                note={note}
+                position={pos}
+                selected={selectedItemId === pos.id}
+                onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
+              />
+            );
+          })}
         </div>
 
         {/* Context menu */}
         {contextMenu && (
           <div
-            className="fixed bg-bg-surface border border-border-default rounded-[8px] shadow-[0_8px_32px_rgba(0,0,0,0.4)] py-1 z-50"
             style={{
+              position: 'fixed',
               left: contextMenu.x * zoom + panX + 260,
               top: contextMenu.y * zoom + panY,
+              backgroundColor: colors.bg.surface,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: '8px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              padding: '4px 0',
+              zIndex: 50,
             }}
           >
             <button
               onClick={() => handleAddSticky('#7C3AED')}
-              className="w-full text-left px-3 py-2 text-[12px] text-text-secondary hover:bg-bg-surface-hover hover:text-text-primary transition-colors duration-150 cursor-pointer"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '8px 12px',
+                fontSize: font.size.sm,
+                color: colors.text.secondary,
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = colors.bg.surfaceHover; e.currentTarget.style.color = colors.text.primary; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text.secondary; }}
             >
               Add Sticky Note
             </button>
@@ -212,30 +238,26 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
       {/* Toolbar */}
       <CanvasToolbar
-        onZoomToFit={() => {
-          setPan(0, 0);
-          setZoom(1);
-        }}
-        onResetView={() => {
-          setPan(0, 0);
-          setZoom(1);
-        }}
+        onZoomToFit={() => { setPan(0, 0); setZoom(1); }}
+        onResetView={() => { setPan(0, 0); setZoom(1); }}
       />
 
       {/* Zoom indicator */}
-      <div className="absolute bottom-4 right-4 text-[11px] text-text-muted bg-bg-surface/80 px-2 py-1 rounded">
+      <div style={{
+        position: 'absolute',
+        bottom: '16px',
+        right: '16px',
+        fontSize: font.size.xs,
+        color: colors.text.muted,
+        backgroundColor: 'rgba(26,26,26,0.8)',
+        padding: '4px 8px',
+        borderRadius: '4px',
+      }}>
         {Math.round(zoom * 100)}%
       </div>
 
       {/* Minimap */}
-      {_showMinimap && (
-        <Minimap
-          positions={positions}
-          zoom={zoom}
-          panX={panX}
-          panY={panY}
-        />
-      )}
+      {showMinimap && <Minimap positions={positions} zoom={zoom} panX={panX} panY={panY} />}
     </div>
   );
 }
