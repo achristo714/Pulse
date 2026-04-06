@@ -32,7 +32,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     id: string; startX: number; startY: number; origX: number; origY: number;
   } | null>(null);
   const [showMinimap] = useState(true);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; positionId?: string } | null>(null);
   // Connection drawing state
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
   const [connectingMouse, setConnectingMouse] = useState<{ x: number; y: number } | null>(null);
@@ -437,6 +437,12 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                 style={{ left: pos.x, top: pos.y }}
                 onDoubleClick={() => onTaskDoubleClick(task.id)}
                 onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const cPos = screenToCanvas(e.clientX, e.clientY);
+                  setContextMenu({ ...cPos, positionId: pos.id });
+                }}
               />
             );
           })}
@@ -446,7 +452,14 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
             const note = stickyNotes.find((n) => n.canvas_position_id === pos.id);
             if (!note) return null;
             return (
-              <StickyNoteCard key={pos.id} note={note} position={pos} selected={selectedItemId === pos.id || selectedIds.has(pos.id)} onMouseDown={(e) => handleCardMouseDown(pos.id, e)} />
+              <StickyNoteCard key={pos.id} note={note} position={pos} selected={selectedItemId === pos.id || selectedIds.has(pos.id)} onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
+                onContextMenu={(e: React.MouseEvent) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const cPos = screenToCanvas(e.clientX, e.clientY);
+                  setContextMenu({ ...cPos, positionId: pos.id });
+                }}
+              />
             );
           })}
 
@@ -467,27 +480,69 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
         </div>
 
         {/* Context menu */}
-        {contextMenu && (
-          <div style={{
-            position: 'fixed',
-            left: contextMenu.x * zoom + panX + 260,
-            top: contextMenu.y * zoom + panY,
-            backgroundColor: colors.bg.surface,
-            border: `1px solid ${colors.border.default}`,
-            borderRadius: '8px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-            padding: '4px 0',
-            zIndex: 50,
-          }}>
-            <CtxBtn onClick={() => handleAddSticky('#7C3AED')}>Add Sticky Note</CtxBtn>
-            {selectedIds.size > 0 && (
-              <CtxBtn onClick={() => { for (const id of selectedIds) handleStash(id); setContextMenu(null); }}>Stash Selected to Inbox</CtxBtn>
-            )}
-            {positions.filter((p) => p.item_type === 'task').length > 0 && (
-              <CtxBtn onClick={() => { handleStashAll(); setContextMenu(null); }}>Stash All to Inbox</CtxBtn>
-            )}
-          </div>
-        )}
+        {contextMenu && (() => {
+          const ctxPos = contextMenu.positionId ? positions.find((p) => p.id === contextMenu.positionId) : null;
+          const ctxTask = ctxPos?.item_type === 'task' && ctxPos.item_id ? tasks.find((t) => t.id === ctxPos.item_id) : null;
+          const ctxIsSticky = ctxPos?.item_type === 'sticky';
+          const updateTask = useTaskStore.getState().updateTask;
+          const { deleteStickyNote } = useCanvasStore.getState();
+
+          return (
+            <div style={{
+              position: 'fixed',
+              left: contextMenu.x * zoom + panX + 260,
+              top: contextMenu.y * zoom + panY,
+              backgroundColor: colors.bg.surface,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: '8px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              padding: '4px 0',
+              zIndex: 50,
+              minWidth: '180px',
+            }}>
+              {/* Card-specific options */}
+              {ctxTask && (
+                <>
+                  <div style={{ padding: '6px 12px', fontSize: font.size.xs, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Category</div>
+                  {CATEGORIES.map((cat) => (
+                    <CtxBtn key={cat} onClick={() => { updateTask(ctxTask.id, { category: cat }); setContextMenu(null); }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: CATEGORY_CONFIG[cat].color, display: 'inline-block' }} />
+                        {CATEGORY_CONFIG[cat].label}
+                        {ctxTask.category === cat ? ' ✓' : ''}
+                      </span>
+                    </CtxBtn>
+                  ))}
+                  <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
+                  <CtxBtn onClick={() => { handleStash(contextMenu.positionId!); setContextMenu(null); }}>Stash to Inbox</CtxBtn>
+                </>
+              )}
+              {/* Sticky note options */}
+              {ctxIsSticky && ctxPos && (
+                <>
+                  <CtxBtn onClick={() => {
+                    const note = stickyNotes.find((n) => n.canvas_position_id === ctxPos.id);
+                    if (note) deleteStickyNote(ctxPos.id, note.id);
+                    setContextMenu(null);
+                  }}>Delete Sticky Note</CtxBtn>
+                  <CtxBtn onClick={() => { handleStash(ctxPos.id); setContextMenu(null); }}>Remove from Canvas</CtxBtn>
+                </>
+              )}
+              {/* Canvas-level options (right-click on empty space) */}
+              {!ctxPos && (
+                <>
+                  <CtxBtn onClick={() => { handleAddSticky('#7C3AED'); }}>Add Sticky Note</CtxBtn>
+                  {selectedIds.size > 0 && (
+                    <CtxBtn onClick={() => { for (const id of selectedIds) handleStash(id); setContextMenu(null); }}>Stash Selected</CtxBtn>
+                  )}
+                  {positions.filter((p) => p.item_type === 'task').length > 0 && (
+                    <CtxBtn onClick={() => { handleStashAll(); setContextMenu(null); }}>Stash All to Inbox</CtxBtn>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       <CanvasToolbar onZoomToFit={() => { setPan(0, 0); setZoom(1); }} onResetView={() => { setPan(0, 0); setZoom(1); }} />

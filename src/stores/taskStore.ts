@@ -198,9 +198,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   // Images
   uploadImage: async (taskId, file) => {
-    const path = `task-images/${taskId}/${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage.from('task-images').upload(path, file);
-    if (uploadError) return null;
+    // Sanitize filename
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${taskId}/${Date.now()}-${safeName}`;
+    const { error: uploadError } = await supabase.storage.from('task-images').upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+    if (uploadError) {
+      console.error('Image upload failed:', uploadError.message);
+      alert(`Upload failed: ${uploadError.message}`);
+      return null;
+    }
 
     const { data, error } = await supabase
       .from('task_images')
@@ -208,7 +217,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       .select()
       .single();
 
-    if (error || !data) return null;
+    if (error || !data) {
+      console.error('Image record insert failed:', error?.message);
+      return null;
+    }
     set((s) => ({
       tasks: s.tasks.map((t) =>
         t.id === taskId ? { ...t, images: [...(t.images || []), data] } : t

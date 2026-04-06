@@ -13,9 +13,10 @@ interface TaskCardProps {
   style?: React.CSSProperties;
   onDoubleClick?: () => void;
   onMouseDown?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export function TaskCard({ task, members, selected, style: posStyle, onDoubleClick, onMouseDown }: TaskCardProps) {
+export function TaskCard({ task, members, selected, style: posStyle, onDoubleClick, onMouseDown, onContextMenu }: TaskCardProps) {
   const { cycleStatus } = useTaskStore();
   const assigned = members.find((m) => m.id === task.assigned_to);
 
@@ -37,6 +38,7 @@ export function TaskCard({ task, members, selected, style: posStyle, onDoubleCli
       }}
       onDoubleClick={onDoubleClick}
       onMouseDown={onMouseDown}
+      onContextMenu={onContextMenu}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
         <StatusCircle status={task.status} category={task.category} onClick={() => cycleStatus(task.id)} size={16} />

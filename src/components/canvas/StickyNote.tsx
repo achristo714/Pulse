@@ -7,9 +7,10 @@ interface StickyNoteCardProps {
   position: CanvasPosition;
   selected?: boolean;
   onMouseDown?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
-export function StickyNoteCard({ note, position, selected, onMouseDown }: StickyNoteCardProps) {
+export function StickyNoteCard({ note, position, selected, onMouseDown, onContextMenu }: StickyNoteCardProps) {
   const { updateStickyNote } = useCanvasStore();
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(note.content);
@@ -37,6 +38,7 @@ export function StickyNoteCard({ note, position, selected, onMouseDown }: Sticky
         borderStyle: 'solid',
       }}
       onMouseDown={onMouseDown}
+      onContextMenu={onContextMenu}
       onDoubleClick={() => setEditing(true)}
     >
       {editing ? (

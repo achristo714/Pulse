@@ -16,6 +16,7 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
   const { tasks, selectedTaskId, setSelectedTask, reorderTasks } = useTaskStore();
   const { categoryFilters, statusFilters, assigneeFilter, collapsedCategories, toggleCategoryCollapse } = useUIStore();
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [sortBy, setSortBy] = useState<'default' | 'due_date' | 'updated'>('default');
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
@@ -32,60 +33,61 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
   const tasksByCategory = useMemo(() => {
     const grouped: Record<TaskCategory, Task[]> = { education: [], resources: [], support: [], admin: [] };
     for (const task of filteredTasks) grouped[task.category].push(task);
-    // Sort: incomplete first, completed at bottom
+    // Sort within categories
     for (const cat of CATEGORIES) {
       grouped[cat].sort((a, b) => {
+        // Completed always at bottom
         if (a.status === 'done' && b.status !== 'done') return 1;
         if (a.status !== 'done' && b.status === 'done') return -1;
-        return 0;
+        // Then by selected sort
+        if (sortBy === 'due_date') {
+          if (!a.due_date && b.due_date) return 1;
+          if (a.due_date && !b.due_date) return -1;
+          if (a.due_date && b.due_date) return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
+        if (sortBy === 'updated') {
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        }
+        return (a.sort_order || 0) - (b.sort_order || 0);
       });
     }
     return grouped;
-  }, [filteredTasks]);
+  }, [filteredTasks, sortBy]);
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
   const completedCount = tasks.filter((t) => t.status === 'done').length;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', fontFamily: font.family }}>
-      {/* Hide completed toggle */}
-      {completedCount > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '6px 28px', borderBottom: `1px solid ${colors.border.subtle}` }}>
+      {/* Sort + hide completed bar */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '6px 28px', borderBottom: `1px solid ${colors.border.subtle}`, gap: '8px' }}>
+        {/* Sort options */}
+        <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>Sort:</span>
+        {(['default', 'due_date', 'updated'] as const).map((s) => (
+          <button key={s} onClick={() => setSortBy(s)} style={{
+            fontSize: font.size.xs, padding: '2px 8px', borderRadius: '4px',
+            color: sortBy === s ? colors.accent.purple : colors.text.muted,
+            backgroundColor: sortBy === s ? colors.accent.purpleSubtle : 'transparent',
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            {s === 'default' ? 'Manual' : s === 'due_date' ? 'Due Date' : 'Updated'}
+          </button>
+        ))}
+        <div style={{ flex: 1 }} />
+        {completedCount > 0 && (
           <button
             onClick={() => setHideCompleted(!hideCompleted)}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: font.size.xs,
-              color: hideCompleted ? colors.accent.purple : colors.text.muted,
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              transition: 'all 150ms',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              fontSize: font.size.xs, color: hideCompleted ? colors.accent.purple : colors.text.muted,
+              backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', padding: '4px 8px', borderRadius: '4px',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              {hideCompleted ? (
-                <>
-                  <path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" stroke="currentColor" strokeWidth="1.2" />
-                  <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
-                </>
-              ) : (
-                <>
-                  <path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" stroke="currentColor" strokeWidth="1.2" />
-                  <circle cx="7" cy="7" r="2" stroke="currentColor" strokeWidth="1.2" />
-                  <line x1="2" y1="12" x2="12" y2="2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                </>
-              )}
-            </svg>
             {hideCompleted ? `Show completed (${completedCount})` : `Hide completed (${completedCount})`}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {filteredTasks.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '250px', color: colors.text.muted }}>
