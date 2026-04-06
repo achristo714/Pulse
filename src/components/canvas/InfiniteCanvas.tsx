@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { TaskCard } from '../task/TaskCard';
 import { StickyNoteCard } from './StickyNote';
 import { CanvasInbox } from './CanvasInbox';
@@ -33,7 +33,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     origX: number;
     origY: number;
   } | null>(null);
-  const [showMinimap, setShowMinimap] = useState(true);
+  const [_showMinimap] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   // Pan with middle mouse or background drag
@@ -228,7 +228,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
       </div>
 
       {/* Minimap */}
-      {showMinimap && (
+      {_showMinimap && (
         <Minimap
           positions={positions}
           zoom={zoom}

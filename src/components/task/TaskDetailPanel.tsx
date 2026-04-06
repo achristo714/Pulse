@@ -9,7 +9,7 @@ import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { useTaskStore } from '../../stores/taskStore';
 import { CATEGORY_CONFIG, CATEGORIES, STATUSES } from '../../lib/constants';
-import type { Task, Profile, TaskCategory } from '../../lib/types';
+import type { Task, Profile } from '../../lib/types';
 import { supabase } from '../../lib/supabase';
 
 interface TaskDetailPanelProps {
@@ -19,7 +19,7 @@ interface TaskDetailPanelProps {
 }
 
 export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps) {
-  const { updateTask, deleteTask, cycleStatus, uploadImage, deleteImage } = useTaskStore();
+  const { updateTask, deleteTask, uploadImage, deleteImage } = useTaskStore();
   const [title, setTitle] = useState(task.title);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,8 +79,6 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
     const { data } = supabase.storage.from('task-images').getPublicUrl(storagePath);
     return data.publicUrl;
   };
-
-  const assignedMember = members.find((m) => m.id === task.assigned_to);
 
   return (
     <div className="fixed right-0 top-14 bottom-0 w-[400px] bg-bg-surface border-l border-border-default overflow-y-auto z-30 shadow-[-4px_0_24px_rgba(0,0,0,0.3)]">

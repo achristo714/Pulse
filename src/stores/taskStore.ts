@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Task, Subtask, TaskImage, TaskStatus, TaskCategory } from '../lib/types';
+import type { Task, Subtask, TaskImage, TaskStatus } from '../lib/types';
 import { supabase } from '../lib/supabase';
 
 interface TaskState {

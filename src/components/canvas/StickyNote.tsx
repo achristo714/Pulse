@@ -10,7 +10,7 @@ interface StickyNoteCardProps {
 }
 
 export function StickyNoteCard({ note, position, selected, onMouseDown }: StickyNoteCardProps) {
-  const { updateStickyNote, deleteStickyNote } = useCanvasStore();
+  const { updateStickyNote } = useCanvasStore();
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(note.content);
 

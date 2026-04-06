@@ -1,6 +1,5 @@
 import { StatusCircle } from '../task/StatusCircle';
 import { CategoryPill } from '../task/CategoryPill';
-import { useCanvasStore } from '../../stores/canvasStore';
 import { useTaskStore } from '../../stores/taskStore';
 import type { Task, Profile } from '../../lib/types';
 
@@ -10,8 +9,7 @@ interface CanvasInboxProps {
   teamId: string;
 }
 
-export function CanvasInbox({ tasks, members, teamId }: CanvasInboxProps) {
-  const createTaskPosition = useCanvasStore((s) => s.createTaskPosition);
+export function CanvasInbox({ tasks, members: _members, teamId: _teamId }: CanvasInboxProps) {
   const cycleStatus = useTaskStore((s) => s.cycleStatus);
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
