@@ -81,6 +81,12 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     }
     if (e.button === 0 && e.target === canvasRef.current) {
       setContextMenu(null);
+      // Cancel connect mode if clicking empty space
+      if (connectingFrom) {
+        setConnectingFrom(null);
+        setConnectingMouse(null);
+        return;
+      }
       // Start selection rectangle
       const pos = screenToCanvas(e.clientX, e.clientY);
       setSelectionRect({ startX: pos.x, startY: pos.y, endX: pos.x, endY: pos.y });
@@ -458,9 +464,29 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                 task={task}
                 members={members}
                 selected={isSelected}
+                connecting={connectingFrom === pos.id}
+                connectTarget={!!connectingFrom && connectingFrom !== pos.id}
                 style={{ left: pos.x, top: pos.y }}
-                onDoubleClick={() => onTaskDoubleClick(task.id)}
-                onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
+                onDoubleClick={() => {
+                  if (connectingFrom) return;
+                  onTaskDoubleClick(task.id);
+                }}
+                onMouseDown={(e) => {
+                  if (connectingFrom) return; // don't drag while connecting
+                  handleCardMouseDown(pos.id, e);
+                }}
+                onClick={() => {
+                  // Complete connection if in connect mode
+                  if (connectingFrom && connectingFrom !== pos.id) {
+                    createConnection(teamId, connectingFrom, pos.id);
+                    setConnectingFrom(null);
+                    setConnectingMouse(null);
+                  }
+                }}
+                onStartConnect={() => {
+                  setConnectingFrom(pos.id);
+                  setConnectingMouse({ x: pos.x + 140, y: pos.y + 80 });
+                }}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -568,6 +594,27 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
           );
         })()}
       </div>
+
+      {/* Connect mode banner */}
+      {connectingFrom && (
+        <div style={{
+          position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)', marginLeft: '130px',
+          padding: '8px 20px', backgroundColor: colors.accent.purple, color: '#fff',
+          fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '8px',
+          boxShadow: `0 4px 16px ${colors.accent.purple}40`, zIndex: 20,
+          display: 'flex', alignItems: 'center', gap: '10px', fontFamily: font.family,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M3 11L11 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M7 3H11V7" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Click a target card to connect
+          <button onClick={() => { setConnectingFrom(null); setConnectingMouse(null); }} style={{
+            background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '4px',
+            color: '#fff', fontSize: font.size.xs, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit',
+          }}>Cancel</button>
+        </div>
+      )}
 
       <CanvasToolbar onZoomToFit={() => { setPan(0, 0); setZoom(1); }} onResetView={() => { setPan(0, 0); setZoom(1); }} />
 
