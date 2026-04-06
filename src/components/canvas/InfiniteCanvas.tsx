@@ -20,9 +20,10 @@ interface InfiniteCanvasProps {
 export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: InfiniteCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const {
-    positions, stickyNotes, zoom, panX, panY,
+    positions, stickyNotes, connections, zoom, panX, panY,
     setZoom, setPan, selectedItemId, setSelectedItem,
     updatePosition, createStickyNote, createTaskPosition, snapToGrid,
+    createConnection,
   } = useCanvasStore();
   const tasks = useTaskStore((s) => s.tasks);
 
@@ -32,6 +33,9 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   } | null>(null);
   const [showMinimap] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  // Connection drawing state
+  const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
+  const [connectingMouse, setConnectingMouse] = useState<{ x: number; y: number } | null>(null);
 
   // Multi-select
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -85,6 +89,12 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
       }
       return;
     }
+    // Connection drawing
+    if (connectingFrom) {
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      setConnectingMouse(pos);
+      return;
+    }
     // Single drag
     if (dragState) {
       const dx = (e.clientX - dragState.startX) / zoom;
@@ -96,7 +106,22 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     }
   }, [isPanning, isSelecting, selectionRect, multiDrag, dragState, panX, panY, zoom, setPan, screenToCanvas, snapToGrid, updatePosition]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e?: React.MouseEvent) => {
+    // Finish connection drawing
+    if (connectingFrom && e) {
+      const mousePos = screenToCanvas(e.clientX, e.clientY);
+      // Find which card the mouse is over
+      const targetPos = positions.find((p) => {
+        const w = p.width || 280;
+        const h = 80;
+        return mousePos.x >= p.x && mousePos.x <= p.x + w && mousePos.y >= p.y && mousePos.y <= p.y + h;
+      });
+      if (targetPos && targetPos.id !== connectingFrom) {
+        createConnection(teamId, connectingFrom, targetPos.id);
+      }
+      setConnectingFrom(null);
+      setConnectingMouse(null);
+    }
     setIsPanning(false);
     setDragState(null);
     setMultiDrag(null);
@@ -152,6 +177,13 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
   const handleCardMouseDown = useCallback((posId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    // Shift+click starts connection drawing
+    if (e.shiftKey) {
+      setConnectingFrom(posId);
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      setConnectingMouse(pos);
+      return;
+    }
     // If clicking a card that's part of multi-select, start multi-drag
     if (selectedIds.has(posId) && selectedIds.size > 1) {
       const origins = new Map<string, { x: number; y: number }>();
@@ -167,7 +199,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     const pos = positions.find((p) => p.id === posId);
     if (!pos) return;
     setDragState({ id: posId, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y });
-  }, [positions, setSelectedItem, selectedIds]);
+  }, [positions, setSelectedItem, selectedIds, screenToCanvas]);
 
   // Drop from inbox
   const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }, []);
@@ -318,6 +350,40 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                 }
               }
               return lines;
+            })()}
+          </svg>
+
+          {/* Manual user-drawn connections */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
+            <defs>
+              <marker id="userArrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="rgba(124,58,237,0.5)" />
+              </marker>
+            </defs>
+            {connections.map((conn) => {
+              const from = positions.find((p) => p.id === conn.from_position_id);
+              const to = positions.find((p) => p.id === conn.to_position_id);
+              if (!from || !to) return null;
+              const fromX = from.x + (from.width || 280) / 2;
+              const fromY = from.y + 80;
+              const toX = to.x + (to.width || 280) / 2;
+              const toY = to.y;
+              const midY = (fromY + toY) / 2;
+              return (
+                <path key={conn.id} d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`}
+                  stroke={conn.color || colors.accent.purple} strokeOpacity={0.5} strokeWidth={2} fill="none" markerEnd="url(#userArrow)" />
+              );
+            })}
+            {/* Connection being drawn */}
+            {connectingFrom && connectingMouse && (() => {
+              const from = positions.find((p) => p.id === connectingFrom);
+              if (!from) return null;
+              const fromX = from.x + (from.width || 280) / 2;
+              const fromY = from.y + 80;
+              return (
+                <line x1={fromX} y1={fromY} x2={connectingMouse.x} y2={connectingMouse.y}
+                  stroke={colors.accent.purple} strokeWidth={2} strokeDasharray="6 4" strokeOpacity={0.6} />
+              );
             })()}
           </svg>
 

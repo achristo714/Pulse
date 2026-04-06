@@ -41,10 +41,12 @@ export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: 
         alignItems: 'center',
         gap: '10px',
         padding: '12px 28px',
-        borderBottom: `1px solid ${colors.border.default}`,
+        borderBottom: `1px solid ${focused ? colors.accent.purple + '60' : colors.border.default}`,
         fontFamily: font.family,
-        backgroundColor: focused ? 'rgba(124,58,237,0.03)' : 'transparent',
-        boxShadow: focused ? `inset 0 -1px 0 ${colors.accent.purple}40, 0 1px 8px rgba(124,58,237,0.08)` : 'none',
+        backgroundColor: focused ? 'rgba(124,58,237,0.05)' : 'rgba(124,58,237,0.015)',
+        boxShadow: focused
+          ? `inset 0 -2px 0 ${colors.accent.purple}50, 0 2px 16px rgba(124,58,237,0.12), 0 0 40px rgba(124,58,237,0.04)`
+          : `inset 0 0 0 transparent, 0 0 8px rgba(124,58,237,0.03)`,
         transition: 'all 200ms ease-out',
       }}
     >

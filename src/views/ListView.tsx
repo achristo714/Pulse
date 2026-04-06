@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { TaskRow } from '../components/task/TaskRow';
 import { TaskDetailPanel } from '../components/task/TaskDetailPanel';
 import { useTaskStore } from '../stores/taskStore';
@@ -13,7 +13,7 @@ interface ListViewProps {
 }
 
 export function ListView({ members, searchQuery = '' }: ListViewProps) {
-  const { tasks, selectedTaskId, setSelectedTask } = useTaskStore();
+  const { tasks, selectedTaskId, setSelectedTask, reorderTasks } = useTaskStore();
   const { categoryFilters, statusFilters, assigneeFilter, collapsedCategories, toggleCategoryCollapse } = useUIStore();
   const [hideCompleted, setHideCompleted] = useState(false);
 
@@ -110,9 +110,14 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
                 collapsed={isCollapsed}
                 onToggle={() => toggleCategoryCollapse(cat)}
               />
-              {!isCollapsed && catTasks.map((task) => (
-                <TaskRow key={task.id} task={task} members={members} onClick={() => setSelectedTask(task.id)} />
-              ))}
+              {!isCollapsed && (
+                <ReorderableList
+                  tasks={catTasks}
+                  members={members}
+                  onReorder={(ids) => reorderTasks(cat, ids)}
+                  onSelect={(id) => setSelectedTask(id)}
+                />
+              )}
             </div>
           );
         })
@@ -166,5 +171,56 @@ function CategoryHeader({ category, count, collapsed, onToggle }: { category: Ta
       </span>
       <span style={{ fontSize: font.size.sm, color: colors.text.muted }}>{count}</span>
     </button>
+  );
+}
+
+function ReorderableList({ tasks, members, onReorder, onSelect }: {
+  tasks: Task[]; members: Profile[];
+  onReorder: (ids: string[]) => void; onSelect: (id: string) => void;
+}) {
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const handleDragStart = (idx: number) => {
+    dragItem.current = idx;
+    setDragIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    dragOverItem.current = idx;
+  };
+
+  const handleDrop = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    const ids = tasks.map((t) => t.id);
+    const [removed] = ids.splice(dragItem.current, 1);
+    ids.splice(dragOverItem.current, 0, removed);
+    onReorder(ids);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setDragIdx(null);
+  };
+
+  return (
+    <div>
+      {tasks.map((task, idx) => (
+        <div
+          key={task.id}
+          draggable
+          onDragStart={() => handleDragStart(idx)}
+          onDragOver={(e) => handleDragOver(e, idx)}
+          onDrop={handleDrop}
+          onDragEnd={() => setDragIdx(null)}
+          style={{
+            opacity: dragIdx === idx ? 0.4 : 1,
+            transition: 'opacity 150ms',
+          }}
+        >
+          <TaskRow task={task} members={members} onClick={() => onSelect(task.id)} />
+        </div>
+      ))}
+    </div>
   );
 }

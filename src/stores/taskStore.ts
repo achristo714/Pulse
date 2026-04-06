@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Task, Subtask, TaskImage, TaskStatus } from '../lib/types';
 import { supabase } from '../lib/supabase';
+import { triggerConfetti } from '../lib/confetti';
 
 interface TaskState {
   tasks: Task[];
@@ -14,6 +15,7 @@ interface TaskState {
   deleteTask: (id: string) => Promise<void>;
   cycleStatus: (id: string) => Promise<void>;
   setSelectedTask: (id: string | null) => void;
+  reorderTasks: (category: string, taskIds: string[]) => void;
 
   // Subtasks
   fetchSubtasks: (taskId: string) => Promise<Subtask[]>;
@@ -109,9 +111,25 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     if (!task) return;
     const newStatus = STATUS_CYCLE[task.status];
     await get().updateTask(id, { status: newStatus });
+    if (newStatus === 'done') triggerConfetti();
   },
 
   setSelectedTask: (id) => set({ selectedTaskId: id }),
+
+  reorderTasks: (category, taskIds) => {
+    set((s) => {
+      const otherTasks = s.tasks.filter((t) => t.category !== category);
+      const reordered = taskIds.map((id, i) => {
+        const task = s.tasks.find((t) => t.id === id);
+        return task ? { ...task, sort_order: i } : null;
+      }).filter(Boolean) as Task[];
+      return { tasks: [...otherTasks, ...reordered] };
+    });
+    // Persist sort order to DB
+    taskIds.forEach((id, i) => {
+      supabase.from('tasks').update({ sort_order: i }).eq('id', id).then(() => {});
+    });
+  },
 
   // Subtasks
   fetchSubtasks: async (taskId) => {

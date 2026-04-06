@@ -74,6 +74,15 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [createTask, newTaskCategory, setViewMode, setReportModalOpen]);
 
+  const deleteTask = useTaskStore((s) => s.deleteTask);
+
+  const handleClearAll = async () => {
+    if (!confirm('Delete all tasks? This cannot be undone.')) return;
+    for (const t of [...tasks]) {
+      await deleteTask(t.id);
+    }
+  };
+
   const handleSeed = async () => {
     setSeeding(true);
     for (const t of SEED_TASKS) {
@@ -114,18 +123,29 @@ export default function App() {
         <span style={{ color: colors.text.secondary }}>R</span> report
       </div>
 
-      {tasks.length < 10 && (
+      {/* Debug buttons */}
+      <div style={{ position: 'fixed', bottom: '16px', left: '16px', display: 'flex', gap: '8px', zIndex: 100 }}>
         <button onClick={handleSeed} disabled={seeding} style={{
-          position: 'fixed', bottom: '16px', left: '16px', padding: '8px 16px',
-          backgroundColor: seeding ? colors.bg.surfaceActive : colors.bg.surface,
-          color: seeding ? colors.text.muted : colors.accent.purple,
-          fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '8px',
+          padding: '8px 14px',
+          backgroundColor: colors.bg.surface, color: colors.accent.purple,
+          fontSize: font.size.xs, fontWeight: font.weight.medium, borderRadius: '8px',
           border: `1px solid ${colors.border.default}`, cursor: seeding ? 'not-allowed' : 'pointer',
-          fontFamily: font.family, zIndex: 100, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          fontFamily: font.family, boxShadow: '0 4px 16px rgba(0,0,0,0.3)', opacity: seeding ? 0.5 : 1,
         }}>
-          {seeding ? 'Seeding...' : 'Seed 20 Demo Tasks'}
+          {seeding ? 'Seeding...' : '+ Seed 20'}
         </button>
-      )}
+        {tasks.length > 0 && (
+          <button onClick={handleClearAll} style={{
+            padding: '8px 14px',
+            backgroundColor: colors.bg.surface, color: colors.danger,
+            fontSize: font.size.xs, fontWeight: font.weight.medium, borderRadius: '8px',
+            border: `1px solid ${colors.border.default}`, cursor: 'pointer',
+            fontFamily: font.family, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          }}>
+            Clear All
+          </button>
+        )}
+      </div>
     </div>
   );
 }
