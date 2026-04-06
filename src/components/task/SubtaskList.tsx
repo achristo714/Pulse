@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import type { Subtask } from '../../lib/types';
+import { StatusCircle } from './StatusCircle';
+import type { Subtask, TaskCategory } from '../../lib/types';
 import { useTaskStore } from '../../stores/taskStore';
 import { colors, font } from '../../lib/theme';
 
 interface SubtaskListProps {
   taskId: string;
   subtasks: Subtask[];
+  category?: TaskCategory;
 }
 
-export function SubtaskList({ taskId, subtasks }: SubtaskListProps) {
+export function SubtaskList({ taskId, subtasks, category }: SubtaskListProps) {
   const [newTitle, setNewTitle] = useState('');
   const { createSubtask, updateSubtask, deleteSubtask } = useTaskStore();
 
@@ -30,29 +32,19 @@ export function SubtaskList({ taskId, subtasks }: SubtaskListProps) {
           Subtasks
         </span>
         {total > 0 && (
-          <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>
-            {doneCount}/{total}
-          </span>
+          <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>{doneCount}/{total}</span>
         )}
       </div>
 
       {total > 0 && (
         <div style={{ height: '3px', backgroundColor: colors.bg.primary, borderRadius: '2px', marginBottom: '12px', overflow: 'hidden' }}>
-          <div
-            style={{
-              height: '100%',
-              backgroundColor: colors.accent.purple,
-              borderRadius: '2px',
-              transition: 'width 300ms ease-out',
-              width: `${progress}%`,
-            }}
-          />
+          <div style={{ height: '100%', backgroundColor: colors.accent.purple, borderRadius: '2px', transition: 'width 300ms ease-out', width: `${progress}%` }} />
         </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
         {subtasks.map((subtask) => (
-          <SubtaskItem key={subtask.id} subtask={subtask} onToggle={() => updateSubtask(subtask.id, { is_done: !subtask.is_done })} onDelete={() => deleteSubtask(subtask.id)} />
+          <SubtaskItem key={subtask.id} subtask={subtask} category={category} onToggle={() => updateSubtask(subtask.id, { is_done: !subtask.is_done })} onDelete={() => deleteSubtask(subtask.id)} />
         ))}
       </div>
 
@@ -63,22 +55,15 @@ export function SubtaskList({ taskId, subtasks }: SubtaskListProps) {
         onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
         placeholder="+ Add subtask"
         style={{
-          width: '100%',
-          backgroundColor: 'transparent',
-          border: 'none',
-          outline: 'none',
-          fontSize: font.size.base,
-          color: colors.text.primary,
-          padding: '6px 4px',
-          marginTop: '4px',
-          fontFamily: 'inherit',
+          width: '100%', backgroundColor: 'transparent', border: 'none', outline: 'none',
+          fontSize: font.size.base, color: colors.text.primary, padding: '6px 4px', marginTop: '4px', fontFamily: 'inherit',
         }}
       />
     </div>
   );
 }
 
-function SubtaskItem({ subtask, onToggle, onDelete }: { subtask: Subtask; onToggle: () => void; onDelete: () => void }) {
+function SubtaskItem({ subtask, category, onToggle, onDelete }: { subtask: Subtask; category?: TaskCategory; onToggle: () => void; onDelete: () => void }) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -86,42 +71,24 @@ function SubtaskItem({ subtask, onToggle, onDelete }: { subtask: Subtask; onTogg
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '4px',
-        borderRadius: '4px',
-        backgroundColor: hovered ? colors.bg.surfaceHover : 'transparent',
-        transition: 'background-color 150ms',
+        display: 'flex', alignItems: 'center', gap: '10px', padding: '5px 4px',
+        borderRadius: '4px', backgroundColor: hovered ? colors.bg.surfaceHover : 'transparent', transition: 'background-color 150ms',
       }}
     >
-      <input
-        type="checkbox"
-        checked={subtask.is_done}
-        onChange={onToggle}
-        style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: colors.accent.purple }}
+      <StatusCircle
+        status={subtask.is_done ? 'done' : 'todo'}
+        category={category}
+        size={16}
+        onClick={onToggle}
       />
-      <span
-        style={{
-          flex: 1,
-          fontSize: font.size.base,
-          color: subtask.is_done ? colors.text.muted : colors.text.primary,
-          textDecoration: subtask.is_done ? 'line-through' : 'none',
-        }}
-      >
+      <span style={{ flex: 1, fontSize: font.size.base, color: subtask.is_done ? colors.text.muted : colors.text.primary, textDecoration: subtask.is_done ? 'line-through' : 'none' }}>
         {subtask.title}
       </span>
       <button
         onClick={onDelete}
         style={{
-          opacity: hovered ? 1 : 0,
-          color: colors.text.muted,
-          fontSize: font.size.sm,
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          transition: 'opacity 150ms',
-          fontFamily: 'inherit',
+          opacity: hovered ? 1 : 0, color: colors.text.muted, fontSize: font.size.sm,
+          background: 'none', border: 'none', cursor: 'pointer', transition: 'opacity 150ms', fontFamily: 'inherit',
         }}
       >
         ✕
@@ -134,8 +101,6 @@ export function SubtaskCount({ subtasks }: { subtasks: Subtask[] }) {
   if (!subtasks || subtasks.length === 0) return null;
   const done = subtasks.filter((s) => s.is_done).length;
   return (
-    <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>
-      {done}/{subtasks.length}
-    </span>
+    <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>{done}/{subtasks.length}</span>
   );
 }

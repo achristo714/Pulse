@@ -6,9 +6,9 @@ import { CanvasToolbar } from './CanvasToolbar';
 import { Minimap } from './Minimap';
 import { useCanvasStore } from '../../stores/canvasStore';
 import { useTaskStore } from '../../stores/taskStore';
-import { CANVAS_GRID_SIZE, CATEGORY_CONFIG } from '../../lib/constants';
+import { CANVAS_GRID_SIZE, CATEGORY_CONFIG, CATEGORIES } from '../../lib/constants';
 import { colors, font } from '../../lib/theme';
-import type { Profile, StickyColor } from '../../lib/types';
+import type { Profile, StickyColor, TaskCategory } from '../../lib/types';
 
 interface InfiniteCanvasProps {
   teamId: string;
@@ -33,16 +33,59 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   const [showMinimap] = useState(true);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
+  // Multi-select
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectionRect, setSelectionRect] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
+  const [isSelecting, setIsSelecting] = useState(false);
+  // Multi-drag
+  const [multiDrag, setMultiDrag] = useState<{ startX: number; startY: number; origins: Map<string, { x: number; y: number }> } | null>(null);
+
+  const screenToCanvas = useCallback((clientX: number, clientY: number) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    return { x: (clientX - rect.left - panX) / zoom, y: (clientY - rect.top - panY) / zoom };
+  }, [panX, panY, zoom]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.target === canvasRef.current)) {
+    if (e.button === 1) {
       setIsPanning(true);
-      setSelectedItem(null);
-      setContextMenu(null);
+      return;
     }
-  }, [setSelectedItem]);
+    if (e.button === 0 && e.target === canvasRef.current) {
+      setContextMenu(null);
+      // Start selection rectangle
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      setSelectionRect({ startX: pos.x, startY: pos.y, endX: pos.x, endY: pos.y });
+      setIsSelecting(true);
+      if (!e.shiftKey) {
+        setSelectedIds(new Set());
+        setSelectedItem(null);
+      }
+    }
+  }, [setSelectedItem, screenToCanvas]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isPanning) setPan(panX + e.movementX, panY + e.movementY);
+    if (isPanning) {
+      setPan(panX + e.movementX, panY + e.movementY);
+      return;
+    }
+    // Selection rectangle
+    if (isSelecting && selectionRect) {
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      setSelectionRect({ ...selectionRect, endX: pos.x, endY: pos.y });
+      return;
+    }
+    // Multi-drag
+    if (multiDrag) {
+      const dx = (e.clientX - multiDrag.startX) / zoom;
+      const dy = (e.clientY - multiDrag.startY) / zoom;
+      for (const [id, orig] of multiDrag.origins) {
+        const snapped = e.shiftKey ? { x: orig.x + dx, y: orig.y + dy } : snapToGrid(orig.x + dx, orig.y + dy);
+        updatePosition(id, { x: snapped.x, y: snapped.y });
+      }
+      return;
+    }
+    // Single drag
     if (dragState) {
       const dx = (e.clientX - dragState.startX) / zoom;
       const dy = (e.clientY - dragState.startY) / zoom;
@@ -51,9 +94,34 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
         : snapToGrid(dragState.origX + dx, dragState.origY + dy);
       updatePosition(dragState.id, { x: snapped.x, y: snapped.y });
     }
-  }, [isPanning, panX, panY, zoom, dragState, setPan, snapToGrid, updatePosition]);
+  }, [isPanning, isSelecting, selectionRect, multiDrag, dragState, panX, panY, zoom, setPan, screenToCanvas, snapToGrid, updatePosition]);
 
-  const handleMouseUp = useCallback(() => { setIsPanning(false); setDragState(null); }, []);
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+    setDragState(null);
+    setMultiDrag(null);
+    // Finalize selection rectangle
+    if (isSelecting && selectionRect) {
+      const minX = Math.min(selectionRect.startX, selectionRect.endX);
+      const maxX = Math.max(selectionRect.startX, selectionRect.endX);
+      const minY = Math.min(selectionRect.startY, selectionRect.endY);
+      const maxY = Math.max(selectionRect.startY, selectionRect.endY);
+      // Only select if rect is big enough (not just a click)
+      if (maxX - minX > 5 || maxY - minY > 5) {
+        const ids = new Set<string>();
+        for (const pos of positions) {
+          const cx = pos.x + (pos.width || 280) / 2;
+          const cy = pos.y + 40;
+          if (cx >= minX && cx <= maxX && cy >= minY && cy <= maxY) {
+            ids.add(pos.id);
+          }
+        }
+        setSelectedIds(ids);
+      }
+      setSelectionRect(null);
+      setIsSelecting(false);
+    }
+  }, [isSelecting, selectionRect, positions]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -64,20 +132,17 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     const newZoom = Math.max(0.25, Math.min(4, zoom + delta));
     const scale = newZoom / zoom;
-    // Adjust pan so zoom centers on cursor
-    const newPanX = mouseX - (mouseX - panX) * scale;
-    const newPanY = mouseY - (mouseY - panY) * scale;
+    setPan(mouseX - (mouseX - panX) * scale, mouseY - (mouseY - panY) * scale);
     setZoom(newZoom);
-    setPan(newPanX, newPanY);
   }, [zoom, panX, panY, setZoom, setPan]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     if (e.target === canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      setContextMenu({ x: (e.clientX - rect.left - panX) / zoom, y: (e.clientY - rect.top - panY) / zoom });
+      const pos = screenToCanvas(e.clientX, e.clientY);
+      setContextMenu(pos);
     }
-  }, [panX, panY, zoom]);
+  }, [screenToCanvas]);
 
   const handleAddSticky = useCallback((color: StickyColor = '#7C3AED') => {
     if (!contextMenu) return;
@@ -87,48 +152,71 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
   const handleCardMouseDown = useCallback((posId: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    // If clicking a card that's part of multi-select, start multi-drag
+    if (selectedIds.has(posId) && selectedIds.size > 1) {
+      const origins = new Map<string, { x: number; y: number }>();
+      for (const id of selectedIds) {
+        const p = positions.find((pos) => pos.id === id);
+        if (p) origins.set(id, { x: p.x, y: p.y });
+      }
+      setMultiDrag({ startX: e.clientX, startY: e.clientY, origins });
+      return;
+    }
     setSelectedItem(posId);
+    setSelectedIds(new Set([posId]));
     const pos = positions.find((p) => p.id === posId);
     if (!pos) return;
     setDragState({ id: posId, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y });
-  }, [positions, setSelectedItem]);
+  }, [positions, setSelectedItem, selectedIds]);
 
-  // Drop handler for dragging tasks from inbox to canvas
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }, []);
-
+  // Drop from inbox
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }, []);
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId || !canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - panX) / zoom;
-    const y = (e.clientY - rect.top - panY) / zoom;
-    const snapped = snapToGrid(x, y);
+    const pos = screenToCanvas(e.clientX, e.clientY);
+    const snapped = snapToGrid(pos.x, pos.y);
     createTaskPosition(teamId, taskId, snapped.x, snapped.y);
-  }, [panX, panY, zoom, snapToGrid, createTaskPosition, teamId]);
+  }, [screenToCanvas, snapToGrid, createTaskPosition, teamId]);
+
+  // Place All — auto-layout by category
+  const handlePlaceAll = useCallback(async (unplacedTasks: typeof tasks) => {
+    const byCategory: Record<string, typeof tasks> = {};
+    for (const t of unplacedTasks) {
+      if (!byCategory[t.category]) byCategory[t.category] = [];
+      byCategory[t.category].push(t);
+    }
+    let groupX = 40;
+    for (const cat of CATEGORIES) {
+      const catTasks = byCategory[cat];
+      if (!catTasks || catTasks.length === 0) continue;
+      for (let i = 0; i < catTasks.length; i++) {
+        await createTaskPosition(teamId, catTasks[i].id, groupX, 40 + i * 120);
+      }
+      groupX += 340; // next category column
+    }
+  }, [createTaskPosition, teamId]);
 
   const placedTaskIds = new Set(positions.filter((p) => p.item_type === 'task').map((p) => p.item_id));
   const unplacedTasks = tasks.filter((t) => !placedTaskIds.has(t.id));
-
   const gridStep = CANVAS_GRID_SIZE * zoom;
+
+  // Selection rect in screen coords for rendering
+  const selRect = selectionRect ? {
+    x: Math.min(selectionRect.startX, selectionRect.endX),
+    y: Math.min(selectionRect.startY, selectionRect.endY),
+    w: Math.abs(selectionRect.endX - selectionRect.startX),
+    h: Math.abs(selectionRect.endY - selectionRect.startY),
+  } : null;
 
   return (
     <div style={{ position: 'relative', flex: 1, overflow: 'hidden', backgroundColor: colors.bg.primary, height: '100%' }}>
-      {/* Inbox */}
-      <CanvasInbox tasks={unplacedTasks} members={members} teamId={teamId} />
+      <CanvasInbox tasks={unplacedTasks} members={members} teamId={teamId} onPlaceAll={() => handlePlaceAll(unplacedTasks)} />
 
-      {/* Canvas */}
       <div
         ref={canvasRef}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          left: 260,
-          cursor: isPanning ? 'grabbing' : 'grab',
-        }}
+        style={{ position: 'absolute', inset: 0, left: 260, cursor: isPanning ? 'grabbing' : isSelecting ? 'crosshair' : 'grab' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -139,60 +227,25 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
         onDrop={handleDrop}
         onDoubleClick={(e) => {
           if (e.target === canvasRef.current) {
-            const rect = canvasRef.current.getBoundingClientRect();
-            const x = (e.clientX - rect.left - panX) / zoom;
-            const y = (e.clientY - rect.top - panY) / zoom;
-            createStickyNote(teamId, userId, x, y);
+            const pos = screenToCanvas(e.clientX, e.clientY);
+            createStickyNote(teamId, userId, pos.x, pos.y);
           }
         }}
       >
-        {/* Dot grid — low opacity, Destiny-style geometric */}
+        {/* Dot grid */}
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
           <defs>
-            {/* Small dot grid */}
-            <pattern
-              id="dotGrid"
-              width={gridStep}
-              height={gridStep}
-              patternUnits="userSpaceOnUse"
-              x={panX % gridStep}
-              y={panY % gridStep}
-            >
+            <pattern id="dotGrid" width={gridStep} height={gridStep} patternUnits="userSpaceOnUse" x={panX % gridStep} y={panY % gridStep}>
               <circle cx={gridStep / 2} cy={gridStep / 2} r={0.6 * zoom} fill="rgba(255,255,255,0.06)" />
             </pattern>
-            {/* Larger geometric crosshair grid */}
-            <pattern
-              id="crossGrid"
-              width={gridStep * 5}
-              height={gridStep * 5}
-              patternUnits="userSpaceOnUse"
-              x={panX % (gridStep * 5)}
-              y={panY % (gridStep * 5)}
-            >
-              {/* Intersection cross */}
+            <pattern id="crossGrid" width={gridStep * 5} height={gridStep * 5} patternUnits="userSpaceOnUse" x={panX % (gridStep * 5)} y={panY % (gridStep * 5)}>
               <line x1={gridStep * 2.5 - 3 * zoom} y1={gridStep * 2.5} x2={gridStep * 2.5 + 3 * zoom} y2={gridStep * 2.5} stroke="rgba(124,58,237,0.08)" strokeWidth={0.5 * zoom} />
               <line x1={gridStep * 2.5} y1={gridStep * 2.5 - 3 * zoom} x2={gridStep * 2.5} y2={gridStep * 2.5 + 3 * zoom} stroke="rgba(124,58,237,0.08)" strokeWidth={0.5 * zoom} />
-              {/* Corner diamond */}
-              <polygon
-                points={`${gridStep * 2.5},${gridStep * 2.5 - 1.5 * zoom} ${gridStep * 2.5 + 1.5 * zoom},${gridStep * 2.5} ${gridStep * 2.5},${gridStep * 2.5 + 1.5 * zoom} ${gridStep * 2.5 - 1.5 * zoom},${gridStep * 2.5}`}
-                fill="none"
-                stroke="rgba(124,58,237,0.06)"
-                strokeWidth={0.4 * zoom}
-              />
+              <polygon points={`${gridStep * 2.5},${gridStep * 2.5 - 1.5 * zoom} ${gridStep * 2.5 + 1.5 * zoom},${gridStep * 2.5} ${gridStep * 2.5},${gridStep * 2.5 + 1.5 * zoom} ${gridStep * 2.5 - 1.5 * zoom},${gridStep * 2.5}`} fill="none" stroke="rgba(124,58,237,0.06)" strokeWidth={0.4 * zoom} />
             </pattern>
-            {/* Large section lines */}
-            <pattern
-              id="sectionGrid"
-              width={gridStep * 10}
-              height={gridStep * 10}
-              patternUnits="userSpaceOnUse"
-              x={panX % (gridStep * 10)}
-              y={panY % (gridStep * 10)}
-            >
-              {/* Thin section border lines */}
+            <pattern id="sectionGrid" width={gridStep * 10} height={gridStep * 10} patternUnits="userSpaceOnUse" x={panX % (gridStep * 10)} y={panY % (gridStep * 10)}>
               <line x1="0" y1="0" x2={gridStep * 10} y2="0" stroke="rgba(255,255,255,0.03)" strokeWidth={0.5} />
               <line x1="0" y1="0" x2="0" y2={gridStep * 10} stroke="rgba(255,255,255,0.03)" strokeWidth={0.5} />
-              {/* Corner tick marks — geometric accent */}
               <line x1="0" y1="0" x2={4 * zoom} y2="0" stroke="rgba(124,58,237,0.1)" strokeWidth={1} />
               <line x1="0" y1="0" x2="0" y2={4 * zoom} stroke="rgba(124,58,237,0.1)" strokeWidth={1} />
             </pattern>
@@ -204,7 +257,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
         {/* Transform layer */}
         <div style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0' }}>
-          {/* Connection arrows between task cards */}
+          {/* Connection arrows */}
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
             <defs>
               <marker id="arrowHead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
@@ -212,7 +265,6 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
               </marker>
             </defs>
             {(() => {
-              // Group task positions by category and draw arrows between them
               const taskPositions = positions.filter((p) => p.item_type === 'task' && p.item_id);
               const byCategory: Record<string, typeof taskPositions> = {};
               for (const pos of taskPositions) {
@@ -223,29 +275,19 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
               }
               const lines: React.ReactNode[] = [];
               for (const cat of Object.keys(byCategory)) {
-                const catPositions = byCategory[cat];
-                if (catPositions.length < 2) continue;
-                // Sort by x position (left to right)
-                catPositions.sort((a, b) => a.x - b.x);
+                const cp = byCategory[cat];
+                if (cp.length < 2) continue;
+                cp.sort((a, b) => a.y === b.y ? a.x - b.x : a.y - b.y);
                 const catColor = CATEGORY_CONFIG[cat as keyof typeof CATEGORY_CONFIG]?.color || colors.accent.purple;
-                for (let i = 0; i < catPositions.length - 1; i++) {
-                  const from = catPositions[i];
-                  const to = catPositions[i + 1];
-                  const fromX = from.x + (from.width || 280);
-                  const fromY = from.y + 40;
-                  const toX = to.x;
-                  const toY = to.y + 40;
-                  const midX = (fromX + toX) / 2;
+                for (let i = 0; i < cp.length - 1; i++) {
+                  const from = cp[i]; const to = cp[i + 1];
+                  const fromX = from.x + (from.width || 280) / 2;
+                  const fromY = from.y + 80;
+                  const toX = to.x + (to.width || 280) / 2;
+                  const toY = to.y;
+                  const midY = (fromY + toY) / 2;
                   lines.push(
-                    <path
-                      key={`${from.id}-${to.id}`}
-                      d={`M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`}
-                      stroke={catColor}
-                      strokeOpacity={0.25}
-                      strokeWidth={1.5}
-                      fill="none"
-                      markerEnd="url(#arrowHead)"
-                    />
+                    <path key={`${from.id}-${to.id}`} d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`} stroke={catColor} strokeOpacity={0.3} strokeWidth={1.5} fill="none" markerEnd="url(#arrowHead)" />
                   );
                 }
               }
@@ -253,16 +295,53 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
             })()}
           </svg>
 
+          {/* Category group labels */}
+          {(() => {
+            const taskPositions = positions.filter((p) => p.item_type === 'task' && p.item_id);
+            const byCategory: Record<string, typeof taskPositions> = {};
+            for (const pos of taskPositions) {
+              const task = tasks.find((t) => t.id === pos.item_id);
+              if (!task) continue;
+              if (!byCategory[task.category]) byCategory[task.category] = [];
+              byCategory[task.category].push(pos);
+            }
+            return Object.entries(byCategory).map(([cat, catPositions]) => {
+              if (catPositions.length === 0) return null;
+              const minX = Math.min(...catPositions.map((p) => p.x));
+              const minY = Math.min(...catPositions.map((p) => p.y));
+              const config = CATEGORY_CONFIG[cat as TaskCategory];
+              if (!config) return null;
+              return (
+                <div key={`label-${cat}`} style={{
+                  position: 'absolute',
+                  left: minX,
+                  top: minY - 30,
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: config.color,
+                  opacity: 0.5,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  pointerEvents: 'none',
+                  fontFamily: font.family,
+                }}>
+                  {config.label}
+                </div>
+              );
+            });
+          })()}
+
           {/* Task cards */}
           {positions.filter((p) => p.item_type === 'task' && p.item_id).map((pos) => {
             const task = tasks.find((t) => t.id === pos.item_id);
             if (!task) return null;
+            const isSelected = selectedItemId === pos.id || selectedIds.has(pos.id);
             return (
               <TaskCard
                 key={pos.id}
                 task={task}
                 members={members}
-                selected={selectedItemId === pos.id}
+                selected={isSelected}
                 style={{ left: pos.x, top: pos.y }}
                 onDoubleClick={() => onTaskDoubleClick(task.id)}
                 onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
@@ -275,76 +354,64 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
             const note = stickyNotes.find((n) => n.canvas_position_id === pos.id);
             if (!note) return null;
             return (
-              <StickyNoteCard
-                key={pos.id}
-                note={note}
-                position={pos}
-                selected={selectedItemId === pos.id}
-                onMouseDown={(e) => handleCardMouseDown(pos.id, e)}
-              />
+              <StickyNoteCard key={pos.id} note={note} position={pos} selected={selectedItemId === pos.id || selectedIds.has(pos.id)} onMouseDown={(e) => handleCardMouseDown(pos.id, e)} />
             );
           })}
+
+          {/* Selection rectangle */}
+          {selRect && selRect.w > 5 && (
+            <div style={{
+              position: 'absolute',
+              left: selRect.x,
+              top: selRect.y,
+              width: selRect.w,
+              height: selRect.h,
+              border: `1.5px dashed ${colors.accent.purple}`,
+              backgroundColor: 'rgba(124,58,237,0.06)',
+              borderRadius: '4px',
+              pointerEvents: 'none',
+            }} />
+          )}
         </div>
 
         {/* Context menu */}
         {contextMenu && (
-          <div
-            style={{
-              position: 'fixed',
-              left: contextMenu.x * zoom + panX + 260,
-              top: contextMenu.y * zoom + panY,
-              backgroundColor: colors.bg.surface,
-              border: `1px solid ${colors.border.default}`,
-              borderRadius: '8px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              padding: '4px 0',
-              zIndex: 50,
-            }}
-          >
-            <button
-              onClick={() => handleAddSticky('#7C3AED')}
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                fontSize: font.size.sm,
-                color: colors.text.secondary,
-                backgroundColor: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = colors.bg.surfaceHover; e.currentTarget.style.color = colors.text.primary; }}
-              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text.secondary; }}
-            >
-              Add Sticky Note
-            </button>
+          <div style={{
+            position: 'fixed',
+            left: contextMenu.x * zoom + panX + 260,
+            top: contextMenu.y * zoom + panY,
+            backgroundColor: colors.bg.surface,
+            border: `1px solid ${colors.border.default}`,
+            borderRadius: '8px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            padding: '4px 0',
+            zIndex: 50,
+          }}>
+            <CtxBtn onClick={() => handleAddSticky('#7C3AED')}>Add Sticky Note</CtxBtn>
           </div>
         )}
       </div>
 
-      {/* Toolbar */}
-      <CanvasToolbar
-        onZoomToFit={() => { setPan(0, 0); setZoom(1); }}
-        onResetView={() => { setPan(0, 0); setZoom(1); }}
-      />
+      <CanvasToolbar onZoomToFit={() => { setPan(0, 0); setZoom(1); }} onResetView={() => { setPan(0, 0); setZoom(1); }} />
 
-      {/* Zoom indicator */}
-      <div style={{
-        position: 'absolute',
-        bottom: '16px',
-        right: '16px',
-        fontSize: font.size.xs,
-        color: colors.text.muted,
-        backgroundColor: 'rgba(26,26,26,0.8)',
-        padding: '4px 8px',
-        borderRadius: '4px',
-      }}>
+      <div style={{ position: 'absolute', bottom: '16px', right: '16px', fontSize: font.size.xs, color: colors.text.muted, backgroundColor: 'rgba(26,26,26,0.8)', padding: '4px 8px', borderRadius: '4px' }}>
         {Math.round(zoom * 100)}%
+        {selectedIds.size > 1 && <span style={{ marginLeft: '8px', color: colors.accent.purple }}>{selectedIds.size} selected</span>}
       </div>
 
-      {/* Minimap */}
       {showMinimap && <Minimap positions={positions} zoom={zoom} panX={panX} panY={panY} />}
     </div>
+  );
+}
+
+function CtxBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={onClick} onMouseOver={() => setH(true)} onMouseOut={() => setH(false)} style={{
+      width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: font.size.sm,
+      color: h ? colors.text.primary : colors.text.secondary,
+      backgroundColor: h ? colors.bg.surfaceHover : 'transparent',
+      border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+    }}>{children}</button>
   );
 }

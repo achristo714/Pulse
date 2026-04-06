@@ -184,7 +184,7 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
 
         {/* Subtasks */}
         <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
-          <SubtaskList taskId={task.id} subtasks={task.subtasks || []} />
+          <SubtaskList taskId={task.id} subtasks={task.subtasks || []} category={task.category} />
         </div>
 
         {/* Notes */}

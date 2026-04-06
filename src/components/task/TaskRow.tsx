@@ -209,16 +209,15 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '10px',
                 padding: '5px 0',
               }}
             >
-              <input
-                type="checkbox"
-                checked={st.is_done}
-                onChange={() => updateSubtask(st.id, { is_done: !st.is_done })}
-                onClick={(e) => e.stopPropagation()}
-                style={{ width: '14px', height: '14px', cursor: 'pointer', accentColor: colors.accent.purple }}
+              <StatusCircle
+                status={st.is_done ? 'done' : 'todo'}
+                category={task.category}
+                size={16}
+                onClick={() => updateSubtask(st.id, { is_done: !st.is_done })}
               />
               <span
                 style={{
