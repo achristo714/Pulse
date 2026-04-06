@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { StatusCircle } from './StatusCircle';
-import { CategoryPill } from './CategoryPill';
 import { QuickAssign } from './QuickAssign';
 import { SubtaskCount } from './SubtaskList';
 import { useTaskStore } from '../../stores/taskStore';
@@ -107,18 +106,19 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
         </span>
       )}
 
-      {/* Metadata group — right after title */}
-      <SubtaskCount subtasks={task.subtasks || []} />
-      <CategoryPill category={task.category} />
-
-      {/* Spacer pushes trailing items to right */}
-      <div style={{ flex: 1 }} />
-
+      {/* Assignee — right after title on the left */}
       <QuickAssign
         assignedTo={task.assigned_to}
         members={members}
         onAssign={(id) => updateTask(task.id, { assigned_to: id })}
       />
+
+      <SubtaskCount subtasks={task.subtasks || []} />
+
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+
+      {/* Right side: date + icons */}
       <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>
         {task.due_date ? format(new Date(task.due_date), 'MMM d') : 'No date'}
       </span>

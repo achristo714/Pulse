@@ -87,17 +87,18 @@ function CategoryHeader({ category, count, collapsed, onToggle }: { category: Ta
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        padding: '10px 28px',
+        padding: '14px 28px',
         backgroundColor: hovered ? colors.bg.surfaceHover : 'rgba(15,15,15,0.5)',
         border: 'none',
+        borderBottom: `1px solid ${colors.border.default}`,
         cursor: 'pointer',
         fontFamily: 'inherit',
         transition: 'background-color 150ms',
       }}
     >
       <svg
-        width="12"
-        height="12"
+        width="14"
+        height="14"
         viewBox="0 0 12 12"
         style={{
           color: colors.text.muted,
@@ -107,11 +108,11 @@ function CategoryHeader({ category, count, collapsed, onToggle }: { category: Ta
       >
         <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: config.color }} />
-      <span style={{ fontSize: font.size.base, fontWeight: font.weight.semibold, color: colors.text.primary, letterSpacing: '-0.01em' }}>
+      <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: config.color }} />
+      <span style={{ fontSize: font.size.lg, fontWeight: font.weight.semibold, color: colors.text.primary, letterSpacing: '-0.01em' }}>
         {config.label}
       </span>
-      <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>{count}</span>
+      <span style={{ fontSize: font.size.sm, color: colors.text.muted }}>{count}</span>
     </button>
   );
 }

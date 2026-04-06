@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { TopBar } from './components/layout/TopBar';
 import { FilterBar } from './components/layout/FilterBar';
 import { NewTaskInput } from './components/task/NewTaskInput';
+import { CategoryPicker } from './components/task/CategoryPicker';
 import { ListView } from './views/ListView';
 import { CanvasView } from './views/CanvasView';
 import { ReportModal } from './components/report/ReportModal';
@@ -48,6 +49,7 @@ export default function App() {
   const tasks = useTaskStore((s) => s.tasks);
   const { viewMode, reportModalOpen, setReportModalOpen } = useUIStore();
   const [seeding, setSeeding] = useState(false);
+  const [newTaskCategory, setNewTaskCategory] = useState<TaskCategory>('admin');
 
   useEffect(() => {
     fetchTasks(TEAM_ID);
@@ -73,7 +75,8 @@ export default function App() {
       {viewMode === 'list' && (
         <>
           <FilterBar members={[DEMO_PROFILE]} />
-          <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
+          <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} category={newTaskCategory} />
+          <CategoryPicker value={newTaskCategory} onChange={setNewTaskCategory} />
         </>
       )}
       {viewMode === 'list' ? (
@@ -83,7 +86,6 @@ export default function App() {
       )}
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
 
-      {/* Debug seed button */}
       {tasks.length < 10 && (
         <button
           onClick={handleSeed}
@@ -106,7 +108,7 @@ export default function App() {
             transition: 'all 150ms',
           }}
         >
-          {seeding ? 'Seeding...' : '🧪 Seed 20 Demo Tasks'}
+          {seeding ? 'Seeding...' : 'Seed 20 Demo Tasks'}
         </button>
       )}
     </div>
