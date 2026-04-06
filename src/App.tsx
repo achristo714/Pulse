@@ -1,51 +1,42 @@
 import { useEffect } from 'react';
-import { AuthPage } from './components/auth/AuthPage';
-import { OnboardingPage } from './components/auth/OnboardingPage';
 import { TopBar } from './components/layout/TopBar';
 import { FilterBar } from './components/layout/FilterBar';
 import { ListView } from './views/ListView';
 import { CanvasView } from './views/CanvasView';
 import { ReportModal } from './components/report/ReportModal';
-import { useAuth } from './hooks/useAuth';
-import { useTeam } from './hooks/useTeam';
-import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { useTaskStore } from './stores/taskStore';
 import { useUIStore } from './stores/uiStore';
 import { colors, font } from './lib/theme';
+import type { Profile } from './lib/types';
+
+// Hardcoded team/profile for now — auth flow will be re-added later
+const TEAM_ID = '00000000-0000-0000-0000-000000000001';
+const DEMO_PROFILE: Profile = {
+  id: '9546450a-9299-4fd6-b859-7b3f25753c48',
+  team_id: TEAM_ID,
+  display_name: 'Andy',
+  avatar_url: null,
+  role: 'admin',
+};
 
 export default function App() {
-  const { user, profile, loading, signInWithMagicLink, signOut, createTeamAndProfile, joinTeamWithInvite } = useAuth();
-  const { members } = useTeam(profile?.team_id);
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
   const { viewMode, reportModalOpen, setReportModalOpen } = useUIStore();
 
   useEffect(() => {
-    if (profile?.team_id) fetchTasks(profile.team_id);
-  }, [profile?.team_id, fetchTasks]);
-
-  useRealtimeSync(profile?.team_id);
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: colors.bg.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: font.family }}>
-        <div style={{ color: colors.text.muted, fontSize: font.size.md }}>Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) return <AuthPage onSignIn={signInWithMagicLink} />;
-  if (!profile) return <OnboardingPage onCreateTeam={createTeamAndProfile} onJoinTeam={joinTeamWithInvite} />;
+    fetchTasks(TEAM_ID);
+  }, [fetchTasks]);
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
-      <TopBar profile={profile} onSignOut={signOut} />
-      {viewMode === 'list' && <FilterBar members={members} />}
+      <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} />
+      {viewMode === 'list' && <FilterBar members={[DEMO_PROFILE]} />}
       {viewMode === 'list' ? (
-        <ListView members={members} />
+        <ListView members={[DEMO_PROFILE]} />
       ) : (
-        <CanvasView teamId={profile.team_id} userId={profile.id} members={members} />
+        <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />
       )}
-      <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={members} />
+      <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
     </div>
   );
 }
