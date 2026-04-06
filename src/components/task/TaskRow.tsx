@@ -126,6 +126,16 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
             </span>
           )}
 
+          {/* Project number badge */}
+          {task.project_number && (
+            <span style={{
+              fontSize: '10px', color: colors.text.muted, backgroundColor: colors.bg.surfaceActive,
+              padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace', flexShrink: 0,
+            }}>
+              {task.project_number}
+            </span>
+          )}
+
           {/* Subtask expand toggle */}
           {hasSubtasks && (
             <button

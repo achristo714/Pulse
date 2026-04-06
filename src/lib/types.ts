@@ -33,10 +33,24 @@ export interface Task {
   completed_at: string | null;
   due_date: string | null;
   sort_order: number;
+  project_number: string | null;
+  goal_id: string | null;
+  knowledge_article_id: string | null;
   subtasks?: Subtask[];
   images?: TaskImage[];
   assigned_profile?: Profile | null;
   created_profile?: Profile | null;
+  // Joined
+  dependencies?: TaskDependency[];
+  blockers?: TaskDependency[];
+}
+
+export interface TaskDependency {
+  id: string;
+  task_id: string;
+  depends_on: string;
+  team_id: string;
+  created_at: string;
 }
 
 export interface Subtask {

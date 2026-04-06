@@ -7,6 +7,7 @@ import { CanvasView } from './views/CanvasView';
 import { VaultView } from './views/VaultView';
 import { KnowledgeView } from './views/KnowledgeView';
 import { GoalsView } from './views/GoalsView';
+import { CalendarView } from './views/CalendarView';
 import { ReportModal } from './components/report/ReportModal';
 import { useTaskStore } from './stores/taskStore';
 import { useSubscriptionStore } from './stores/subscriptionStore';
@@ -95,7 +96,15 @@ export default function App() {
   const [newTaskCategory, setNewTaskCategory] = useState<TaskCategory>('admin');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => { fetchTasks(TEAM_ID); }, [fetchTasks]);
+  const fetchDependencies = useTaskStore((s) => s.fetchDependencies);
+
+  useEffect(() => {
+    fetchTasks(TEAM_ID);
+    fetchDependencies(TEAM_ID);
+    fetchGoals(TEAM_ID);
+    fetchArticles(TEAM_ID);
+    fetchSubscriptions(TEAM_ID);
+  }, [fetchTasks, fetchDependencies, fetchGoals, fetchArticles, fetchSubscriptions]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -105,9 +114,10 @@ export default function App() {
       if (e.key === 'n' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, title: 'New Task', status: 'todo', category: newTaskCategory }); }
       if (e.key === '1') setViewMode('list');
       if (e.key === '2') setViewMode('canvas');
-      if (e.key === '3') setViewMode('goals');
-      if (e.key === '4') setViewMode('knowledge');
-      if (e.key === '5') setViewMode('vault');
+      if (e.key === '3') setViewMode('calendar');
+      if (e.key === '4') setViewMode('goals');
+      if (e.key === '5') setViewMode('knowledge');
+      if (e.key === '6') setViewMode('vault');
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) setReportModalOpen(true);
       if (e.key === 'Escape') setReportModalOpen(false);
     };
@@ -157,6 +167,7 @@ export default function App() {
 
       {viewMode === 'list' && <ListView members={[DEMO_PROFILE]} searchQuery={searchQuery} />}
       {viewMode === 'canvas' && <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />}
+      {viewMode === 'calendar' && <CalendarView />}
       {viewMode === 'goals' && <GoalsView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
       {viewMode === 'knowledge' && <KnowledgeView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
       {viewMode === 'vault' && <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
@@ -170,7 +181,7 @@ export default function App() {
         border: `1px solid ${colors.border.default}`, zIndex: 5, lineHeight: 1.6,
       }}>
         <span style={{ color: colors.text.secondary }}>N</span> task &nbsp;
-        <span style={{ color: colors.text.secondary }}>1-5</span> views &nbsp;
+        <span style={{ color: colors.text.secondary }}>1-6</span> views &nbsp;
         <span style={{ color: colors.text.secondary }}>R</span> report
       </div>
 

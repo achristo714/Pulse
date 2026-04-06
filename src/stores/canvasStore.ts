@@ -65,7 +65,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   setSelectedItem: (id) => set({ selectedItemId: id }),
 
   createConnection: async (teamId, fromId, toId, color = '#7C3AED') => {
-    const { data } = await supabase.from('canvas_connections').insert({ team_id: teamId, from_position_id: fromId, to_position_id: toId, color }).select().single();
+    const { data, error } = await supabase.from('canvas_connections').insert({ team_id: teamId, from_position_id: fromId, to_position_id: toId, color }).select().single();
+    if (error) { console.error('Connection create failed:', error.message); alert(`Connection failed: ${error.message}`); return; }
     if (data) set((s) => ({ connections: [...s.connections, data] }));
   },
 

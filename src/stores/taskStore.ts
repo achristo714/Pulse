@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Task, Subtask, TaskImage, TaskStatus } from '../lib/types';
+import type { Task, Subtask, TaskImage, TaskStatus, TaskDependency } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import { triggerConfetti } from '../lib/confetti';
 
@@ -27,6 +27,12 @@ interface TaskState {
   // Images
   uploadImage: (taskId: string, file: File) => Promise<TaskImage | null>;
   deleteImage: (id: string, storagePath: string) => Promise<void>;
+
+  // Dependencies
+  addDependency: (taskId: string, dependsOnId: string, teamId: string) => Promise<void>;
+  removeDependency: (depId: string) => Promise<void>;
+  fetchDependencies: (teamId: string) => Promise<void>;
+  allDependencies: TaskDependency[];
 
   // Realtime
   applyRealtimeTask: (payload: { eventType: string; new: Task; old: { id: string } }) => void;
@@ -238,6 +244,25 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         images: t.images?.filter((img) => img.id !== id),
       })),
     }));
+  },
+
+  // Dependencies
+  allDependencies: [],
+
+  addDependency: async (taskId, dependsOnId, teamId) => {
+    const { data, error } = await supabase.from('task_dependencies').insert({ task_id: taskId, depends_on: dependsOnId, team_id: teamId }).select().single();
+    if (error) { console.error('Add dependency failed:', error.message); return; }
+    if (data) set((s) => ({ allDependencies: [...s.allDependencies, data] }));
+  },
+
+  removeDependency: async (depId) => {
+    await supabase.from('task_dependencies').delete().eq('id', depId);
+    set((s) => ({ allDependencies: s.allDependencies.filter((d) => d.id !== depId) }));
+  },
+
+  fetchDependencies: async (teamId) => {
+    const { data } = await supabase.from('task_dependencies').select('*').eq('team_id', teamId);
+    set({ allDependencies: data || [] });
   },
 
   // Realtime

@@ -7,6 +7,8 @@ import { StatusCircle } from './StatusCircle';
 import { SubtaskList } from './SubtaskList';
 import { Avatar } from '../ui/Avatar';
 import { useTaskStore } from '../../stores/taskStore';
+import { useGoalStore } from '../../stores/goalStore';
+import { useKnowledgeStore } from '../../stores/knowledgeStore';
 import { CATEGORY_CONFIG, CATEGORIES, STATUSES } from '../../lib/constants';
 import { colors, font, shadow } from '../../lib/theme';
 import type { Task, Profile } from '../../lib/types';
@@ -19,7 +21,12 @@ interface TaskDetailPanelProps {
 }
 
 export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps) {
-  const { updateTask, deleteTask, uploadImage, deleteImage } = useTaskStore();
+  const { updateTask, deleteTask, uploadImage, deleteImage, addDependency, removeDependency, allDependencies } = useTaskStore();
+  const allTasks = useTaskStore((s) => s.tasks);
+  const goals = useGoalStore((s) => s.goals);
+  const articles = useKnowledgeStore((s) => s.articles);
+  const taskDeps = allDependencies.filter((d) => d.task_id === task.id);
+  const taskBlocks = allDependencies.filter((d) => d.depends_on === task.id);
   const [title, setTitle] = useState(task.title);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -177,10 +184,80 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
           </select>
         </Section>
 
-        {/* Due Date */}
-        <Section label="Due Date">
-          <input type="date" value={task.due_date || ''} onChange={(e) => updateTask(task.id, { due_date: e.target.value || null })} style={{ ...inputStyle, colorScheme: 'dark' }} />
+        {/* Due Date + Project Number */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <SectionLabel>Due Date</SectionLabel>
+            <input type="date" value={task.due_date || ''} onChange={(e) => updateTask(task.id, { due_date: e.target.value || null })} style={{ ...inputStyle, colorScheme: 'dark' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <SectionLabel>Project #</SectionLabel>
+            <input type="text" value={task.project_number || ''} onChange={(e) => updateTask(task.id, { project_number: e.target.value || null })} placeholder="e.g. P-2024-031" style={inputStyle} />
+          </div>
+        </div>
+
+        {/* Goal Link */}
+        <Section label="Linked Goal">
+          <select value={task.goal_id || ''} onChange={(e) => updateTask(task.id, { goal_id: e.target.value || null })} style={{ ...inputStyle, appearance: 'auto' as any }}>
+            <option value="">No goal linked</option>
+            {goals.map((g) => <option key={g.id} value={g.id}>{g.title} ({g.progress}%)</option>)}
+          </select>
         </Section>
+
+        {/* Knowledge Link */}
+        <Section label="Linked Article">
+          <select value={task.knowledge_article_id || ''} onChange={(e) => updateTask(task.id, { knowledge_article_id: e.target.value || null })} style={{ ...inputStyle, appearance: 'auto' as any }}>
+            <option value="">No article linked</option>
+            {articles.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}
+          </select>
+        </Section>
+
+        {/* Dependencies (this task depends on) */}
+        <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
+          <SectionLabel>Blocked By</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+            {taskDeps.map((dep) => {
+              const blockerTask = allTasks.find((t) => t.id === dep.depends_on);
+              if (!blockerTask) return null;
+              return (
+                <div key={dep.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', backgroundColor: colors.bg.primary, borderRadius: '6px', border: `1px solid ${colors.border.default}` }}>
+                  <StatusCircle status={blockerTask.status} category={blockerTask.category} size={14} />
+                  <span style={{ flex: 1, fontSize: font.size.sm, color: colors.text.primary }}>{blockerTask.title}</span>
+                  <button onClick={() => removeDependency(dep.id)} style={{ fontSize: font.size.xs, color: colors.text.muted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
+                </div>
+              );
+            })}
+          </div>
+          <select
+            value=""
+            onChange={(e) => { if (e.target.value) { addDependency(task.id, e.target.value, task.team_id); e.target.value = ''; } }}
+            style={{ ...inputStyle, appearance: 'auto' as any, fontSize: font.size.xs, color: colors.text.muted }}
+          >
+            <option value="">+ Add blocker...</option>
+            {allTasks.filter((t) => t.id !== task.id && !taskDeps.some((d) => d.depends_on === t.id)).map((t) => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Blocks (tasks that depend on this one) */}
+        {taskBlocks.length > 0 && (
+          <div>
+            <SectionLabel>Blocks</SectionLabel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {taskBlocks.map((dep) => {
+                const blockedTask = allTasks.find((t) => t.id === dep.task_id);
+                if (!blockedTask) return null;
+                return (
+                  <div key={dep.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', backgroundColor: colors.bg.primary, borderRadius: '6px', border: `1px solid ${colors.border.default}` }}>
+                    <StatusCircle status={blockedTask.status} category={blockedTask.category} size={14} />
+                    <span style={{ flex: 1, fontSize: font.size.sm, color: colors.text.primary }}>{blockedTask.title}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Subtasks */}
         <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
