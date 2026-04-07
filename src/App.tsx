@@ -30,6 +30,7 @@ import { useKnowledgeStore } from './stores/knowledgeStore';
 import { useGoalStore } from './stores/goalStore';
 import { useCategoryStore } from './stores/categoryStore';
 import { useUIStore } from './stores/uiStore';
+import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { colors, font } from './lib/theme';
 import type { Profile, TaskCategory, TaskStatus } from './lib/types';
 
@@ -129,6 +130,9 @@ export default function App() {
     fetchSubscriptions(TEAM_ID);
     fetchCategories(TEAM_ID);
   }, [fetchTasks, fetchDependencies, fetchGoals, fetchArticles, fetchSubscriptions, fetchCategories]);
+
+  // Real-time sync across devices
+  useRealtimeSync(TEAM_ID);
 
   // Keyboard shortcuts
   useEffect(() => {

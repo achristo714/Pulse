@@ -566,6 +566,30 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
               {/* Card-specific options */}
               {ctxTask && (
                 <>
+                  {/* Status */}
+                  <div style={{ padding: '6px 12px', fontSize: font.size.xs, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</div>
+                  <CtxBtn onClick={() => { updateTask(ctxTask.id, { status: 'todo' }); setContextMenu(null); }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', border: '1.5px solid #6B7280', display: 'inline-block' }} />To Do{ctxTask.status === 'todo' ? ' ✓' : ''}</span>
+                  </CtxBtn>
+                  <CtxBtn onClick={() => { updateTask(ctxTask.id, { status: 'wip' }); setContextMenu(null); }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'linear-gradient(90deg, #F59E0B 50%, transparent 50%)', border: '1.5px solid #F59E0B', display: 'inline-block' }} />In Progress{ctxTask.status === 'wip' ? ' ✓' : ''}</span>
+                  </CtxBtn>
+                  <CtxBtn onClick={() => { updateTask(ctxTask.id, { status: 'done' }); setContextMenu(null); }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />Done{ctxTask.status === 'done' ? ' ✓' : ''}</span>
+                  </CtxBtn>
+
+                  <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
+
+                  {/* Flag */}
+                  <CtxBtn onClick={() => { updateTask(ctxTask.id, { needs_approval: !ctxTask.needs_approval }); setContextMenu(null); }}>
+                    <span style={{ color: ctxTask.needs_approval ? colors.status.wip : colors.text.secondary }}>
+                      {ctxTask.needs_approval ? '⚑ Unflag' : '⚑ Flag for Review'}
+                    </span>
+                  </CtxBtn>
+
+                  <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
+
+                  {/* Category */}
                   <div style={{ padding: '6px 12px', fontSize: font.size.xs, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Category</div>
                   {CATEGORIES.map((cat) => (
                     <CtxBtn key={cat} onClick={() => { updateTask(ctxTask.id, { category: cat }); setContextMenu(null); }}>
@@ -621,6 +645,10 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                       <span style={{ color: '#F59E0B' }}>· · ·</span> Dependency {ctxConn.connection_type === 'dependency' ? '✓' : ''}
                     </CtxBtn>
                     <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
+                    <CtxBtn onClick={() => {
+                      updateConnection(ctxConn.id, { from_position_id: ctxConn.to_position_id, to_position_id: ctxConn.from_position_id });
+                      setContextMenu(null);
+                    }}>Swap Direction</CtxBtn>
                     <CtxBtn onClick={() => { deleteConnection(ctxConn.id); setContextMenu(null); }}>Delete Arrow</CtxBtn>
                   </>
                 );
@@ -630,6 +658,39 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                 <>
                   <CtxBtn onClick={() => { handleAddSticky('#7C3AED'); }}>Add Sticky Note</CtxBtn>
                   <CtxBtn onClick={() => { if (contextMenu) { createFrame(teamId, contextMenu.x, contextMenu.y); setContextMenu(null); } }}>Add Frame</CtxBtn>
+
+                  {/* Alignment tools — when multiple selected */}
+                  {selectedIds.size > 1 && (() => {
+                    const selPositions = positions.filter((p) => selectedIds.has(p.id));
+                    const minX = Math.min(...selPositions.map((p) => p.x));
+                    const maxX = Math.max(...selPositions.map((p) => p.x));
+                    const minY = Math.min(...selPositions.map((p) => p.y));
+                    const avgX = selPositions.reduce((a, p) => a + p.x, 0) / selPositions.length;
+                    return (
+                      <>
+                        <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
+                        <div style={{ padding: '6px 12px', fontSize: font.size.xs, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Align ({selectedIds.size})</div>
+                        <CtxBtn onClick={() => { selPositions.forEach((p) => updatePosition(p.id, { x: minX })); setContextMenu(null); }}>Align Left</CtxBtn>
+                        <CtxBtn onClick={() => { selPositions.forEach((p) => updatePosition(p.id, { x: maxX })); setContextMenu(null); }}>Align Right</CtxBtn>
+                        <CtxBtn onClick={() => { selPositions.forEach((p) => updatePosition(p.id, { y: minY })); setContextMenu(null); }}>Align Top</CtxBtn>
+                        <CtxBtn onClick={() => { selPositions.forEach((p) => updatePosition(p.id, { x: avgX })); setContextMenu(null); }}>Center Horizontal</CtxBtn>
+                        <CtxBtn onClick={() => {
+                          const sorted = [...selPositions].sort((a, b) => a.y - b.y);
+                          const spacing = 120;
+                          sorted.forEach((p, i) => updatePosition(p.id, { y: sorted[0].y + i * spacing }));
+                          setContextMenu(null);
+                        }}>Distribute Vertical</CtxBtn>
+                        <CtxBtn onClick={() => {
+                          const sorted = [...selPositions].sort((a, b) => a.x - b.x);
+                          const spacing = 320;
+                          sorted.forEach((p, i) => updatePosition(p.id, { x: sorted[0].x + i * spacing }));
+                          setContextMenu(null);
+                        }}>Distribute Horizontal</CtxBtn>
+                      </>
+                    );
+                  })()}
+
+                  <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
                   {selectedIds.size > 0 && (
                     <CtxBtn onClick={() => { for (const id of selectedIds) handleStash(id); setContextMenu(null); }}>Stash Selected</CtxBtn>
                   )}

@@ -48,9 +48,8 @@ export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: 
         transition: 'all 200ms ease-out',
       }}
     >
-      <svg width="20" height="20" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
-        <circle cx="9" cy="9" r="7.5" stroke={focused ? colors.accent.purple : colors.text.muted} strokeWidth="1.5" strokeDasharray="3 3" style={{ transition: 'stroke 200ms' }} />
-        <path d="M9 6V12M6 9H12" stroke={focused ? colors.accent.purple : colors.text.muted} strokeWidth="1.5" strokeLinecap="round" style={{ transition: 'stroke 200ms' }} />
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
+        <path d="M9 4V14M4 9H14" stroke={focused ? colors.accent.purple : colors.text.muted} strokeWidth="1.8" strokeLinecap="round" style={{ transition: 'stroke 200ms' }} />
       </svg>
 
       <input
