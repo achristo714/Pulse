@@ -15,12 +15,12 @@ interface SyncTopic {
   created_at: string;
 }
 
-const TOPIC_TYPES: { value: SyncTopic['type']; label: string; icon: string; color: string }[] = [
-  { value: 'update', label: 'Update', icon: '📢', color: '#7C3AED' },
-  { value: 'metric', label: 'Metric', icon: '📊', color: '#10B981' },
-  { value: 'discussion', label: 'Discussion', icon: '💬', color: '#60A5FA' },
-  { value: 'decision', label: 'Decision', icon: '✅', color: '#F59E0B' },
-  { value: 'blocker', label: 'Blocker', icon: '🚫', color: '#EF4444' },
+const TOPIC_TYPES: { value: SyncTopic['type']; label: string; color: string }[] = [
+  { value: 'update', label: 'Update', color: '#7C3AED' },
+  { value: 'metric', label: 'Metric', color: '#10B981' },
+  { value: 'discussion', label: 'Discussion', color: '#60A5FA' },
+  { value: 'decision', label: 'Decision', color: '#F59E0B' },
+  { value: 'blocker', label: 'Blocker', color: '#EF4444' },
 ];
 
 interface SyncViewProps {
@@ -108,7 +108,7 @@ export function SyncView({ teamId, userId, onPresent }: SyncViewProps) {
             color: tt.color, backgroundColor: `${tt.color}10`,
             border: `1px solid ${tt.color}30`, cursor: 'pointer', fontFamily: 'inherit',
           }}>
-            {tt.icon} + {tt.label}
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: tt.color }} /> + {tt.label}
           </button>
         ))}
       </div>
@@ -146,71 +146,66 @@ function TopicCard({ topic, index, onUpdate, onDelete, onUploadImage }: {
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}
       style={{
-        backgroundColor: colors.bg.surface, borderRadius: '12px',
+        backgroundColor: colors.bg.surface, borderRadius: '8px',
         border: `1px solid ${colors.border.default}`,
-        borderLeft: `4px solid ${typeInfo.color}`,
-        padding: '20px',
+        borderLeft: `3px solid ${typeInfo.color}`,
+        padding: '12px 16px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-        <span style={{ fontSize: font.size.xs, color: colors.text.muted, fontWeight: 600, marginTop: '2px', minWidth: '20px' }}>{index}.</span>
-
-        <div style={{ flex: 1 }}>
-          {/* Type selector + title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <select value={topic.type} onChange={(e) => onUpdate(topic.id, { type: e.target.value as any })} style={{
-              padding: '2px 6px', backgroundColor: `${typeInfo.color}15`, border: `1px solid ${typeInfo.color}30`,
-              borderRadius: '6px', fontSize: font.size.xs, color: typeInfo.color, outline: 'none', fontFamily: 'inherit', cursor: 'pointer',
-            }}>
-              {TOPIC_TYPES.map((tt) => <option key={tt.value} value={tt.value}>{tt.icon} {tt.label}</option>)}
-            </select>
-          </div>
-
-          {/* Title */}
-          <input
-            type="text"
-            value={topic.title}
-            onChange={(e) => onUpdate(topic.id, { title: e.target.value })}
-            placeholder="Topic title..."
-            style={{
-              width: '100%', fontSize: font.size.md, fontWeight: 600, color: colors.text.primary,
-              backgroundColor: 'transparent', border: 'none', outline: 'none', fontFamily: 'inherit',
-              marginBottom: '8px',
-            }}
-          />
-
-          {/* Notes */}
-          <textarea
-            value={topic.notes}
-            onChange={(e) => onUpdate(topic.id, { notes: e.target.value })}
-            placeholder="Key takeaways, metrics, notes..."
-            rows={2}
-            style={{
-              width: '100%', fontSize: font.size.sm, color: colors.text.secondary,
-              backgroundColor: colors.bg.primary, border: `1px solid ${colors.border.default}`,
-              borderRadius: '8px', padding: '10px 12px', outline: 'none', fontFamily: 'inherit',
-              resize: 'vertical', lineHeight: 1.6,
-            }}
-          />
-
-          {/* Images */}
-          {topic.image_urls && topic.image_urls.length > 0 && (
-            <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-              {topic.image_urls.map((url, i) => (
-                <div key={i} style={{ width: '120px', height: '80px', borderRadius: '8px', overflow: 'hidden', backgroundColor: colors.bg.primary }}>
-                  <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: '8px', marginTop: '10px', opacity: hovered ? 1 : 0.3, transition: 'opacity 150ms' }}>
-            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onUploadImage(topic.id, e.target.files[0]); }} />
-            <button onClick={() => fileRef.current?.click()} style={{ fontSize: font.size.xs, color: colors.text.muted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>📷 Add Image</button>
-            <button onClick={() => onDelete(topic.id)} style={{ fontSize: font.size.xs, color: colors.text.muted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Delete</button>
-          </div>
+      {/* Row 1: type + title + actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '10px', color: colors.text.muted, fontWeight: 600, minWidth: '16px' }}>{index}</span>
+        <select value={topic.type} onChange={(e) => onUpdate(topic.id, { type: e.target.value as any })} style={{
+          padding: '1px 4px', backgroundColor: `${typeInfo.color}12`, border: `1px solid ${typeInfo.color}25`,
+          borderRadius: '4px', fontSize: '10px', color: typeInfo.color, outline: 'none', fontFamily: 'inherit', cursor: 'pointer',
+        }}>
+          {TOPIC_TYPES.map((tt) => <option key={tt.value} value={tt.value}>{tt.label}</option>)}
+        </select>
+        <input
+          type="text"
+          value={topic.title}
+          onChange={(e) => onUpdate(topic.id, { title: e.target.value })}
+          placeholder="Topic title..."
+          style={{
+            flex: 1, fontSize: font.size.base, fontWeight: 600, color: colors.text.primary,
+            backgroundColor: 'transparent', border: 'none', outline: 'none', fontFamily: 'inherit',
+          }}
+        />
+        <div style={{ display: 'flex', gap: '6px', opacity: hovered ? 1 : 0, transition: 'opacity 150ms' }}>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { if (e.target.files?.[0]) onUploadImage(topic.id, e.target.files[0]); }} />
+          <button onClick={() => fileRef.current?.click()} style={{ fontSize: '10px', color: colors.text.muted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="4.5" cy="5.5" r="1" stroke="currentColor" strokeWidth="1"/></svg>
+          </button>
+          <button onClick={() => onDelete(topic.id)} style={{ fontSize: '10px', color: colors.text.muted, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>✕</button>
         </div>
+      </div>
+
+      {/* Row 2: notes (compact) */}
+      <div style={{ marginTop: '6px', marginLeft: '24px' }}>
+        <textarea
+          value={topic.notes}
+          onChange={(e) => onUpdate(topic.id, { notes: e.target.value })}
+          placeholder="Notes..."
+          rows={1}
+          style={{
+            width: '100%', fontSize: font.size.sm, color: colors.text.secondary,
+            backgroundColor: 'transparent', border: 'none', outline: 'none', fontFamily: 'inherit',
+            resize: 'none', lineHeight: 1.5, padding: 0,
+          }}
+          onFocus={(e) => { e.currentTarget.rows = 3; e.currentTarget.style.backgroundColor = colors.bg.primary; e.currentTarget.style.padding = '8px'; e.currentTarget.style.borderRadius = '6px'; e.currentTarget.style.resize = 'vertical'; }}
+          onBlur={(e) => { e.currentTarget.rows = 1; e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.padding = '0'; e.currentTarget.style.resize = 'none'; }}
+        />
+
+        {/* Images */}
+        {topic.image_urls && topic.image_urls.length > 0 && (
+          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+            {topic.image_urls.map((url, i) => (
+              <div key={i} style={{ width: '80px', height: '52px', borderRadius: '6px', overflow: 'hidden', backgroundColor: colors.bg.primary }}>
+                <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

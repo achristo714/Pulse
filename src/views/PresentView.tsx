@@ -42,20 +42,31 @@ export function PresentView({ members, onExit, syncTopics }: PresentViewProps) {
   const recentDone = useMemo(() => tasks.filter((t) => t.status === 'done').slice(0, 8), [tasks]);
   const activeGoals = useMemo(() => goals.filter((g) => g.status === 'active'), [goals]);
 
-  const syncSections = (syncTopics || []).map((t) => ({
-    id: `sync-${t.id}`,
-    label: t.title || 'Untitled Topic',
-    topic: t,
+  // Group sync topics by type
+  const syncByType = useMemo(() => {
+    const grouped: Record<string, SyncTopic[]> = {};
+    for (const t of (syncTopics || [])) {
+      if (!grouped[t.type]) grouped[t.type] = [];
+      grouped[t.type].push(t);
+    }
+    return grouped;
+  }, [syncTopics]);
+
+  const syncSections = Object.entries(syncByType).map(([type, topics]) => ({
+    id: `sync-${type}`,
+    label: type.charAt(0).toUpperCase() + type.slice(1) + 's',
+    topics,
+    type,
   }));
 
   const sections = [
-    { id: 'overview', label: 'Overview', topic: undefined as SyncTopic | undefined },
+    { id: 'overview', label: 'Overview', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined },
     ...syncSections,
-    { id: 'in-progress', label: 'In Progress', topic: undefined as SyncTopic | undefined },
-    ...(overdue.length > 0 ? [{ id: 'overdue', label: 'Overdue', topic: undefined as SyncTopic | undefined }] : []),
-    ...(needsApproval.length > 0 ? [{ id: 'approvals', label: 'Needs Review', topic: undefined as SyncTopic | undefined }] : []),
-    { id: 'completed', label: 'Recently Completed', topic: undefined as SyncTopic | undefined },
-    ...(activeGoals.length > 0 ? [{ id: 'goals', label: 'Goals', topic: undefined as SyncTopic | undefined }] : []),
+    { id: 'in-progress', label: 'In Progress', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined },
+    ...(overdue.length > 0 ? [{ id: 'overdue', label: 'Overdue', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined }] : []),
+    ...(needsApproval.length > 0 ? [{ id: 'approvals', label: 'Needs Review', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined }] : []),
+    { id: 'completed', label: 'Recently Completed', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined },
+    ...(activeGoals.length > 0 ? [{ id: 'goals', label: 'Goals', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined }] : []),
   ];
 
   const [currentSection, setCurrentSection] = useState(0);
@@ -155,38 +166,35 @@ export function PresentView({ members, onExit, syncTopics }: PresentViewProps) {
             </div>
           )}
 
-          {/* Sync topic slide */}
-          {section.topic && (
-            <div>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                padding: '4px 12px', borderRadius: '20px', marginBottom: '20px',
-                backgroundColor: `${TOPIC_COLORS[section.topic.type] || '#7C3AED'}15`,
-                border: `1px solid ${TOPIC_COLORS[section.topic.type] || '#7C3AED'}30`,
-              }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: TOPIC_COLORS[section.topic.type] || '#7C3AED' }} />
-                <span style={{ fontSize: font.size.sm, fontWeight: 500, color: TOPIC_COLORS[section.topic.type] || '#7C3AED', textTransform: 'capitalize' }}>
-                  {section.topic.type}
-                </span>
-              </div>
-              {section.topic.notes && (
-                <p style={{ fontSize: font.size.lg, color: colors.text.secondary, lineHeight: 1.7, marginBottom: '24px', whiteSpace: 'pre-wrap' }}>
-                  {section.topic.notes}
-                </p>
-              )}
-              {section.topic.image_urls && section.topic.image_urls.length > 0 && (
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  {section.topic.image_urls.map((url, i) => (
-                    <img key={i} src={url} alt="" style={{
-                      maxWidth: '100%', maxHeight: '400px', borderRadius: '12px',
-                      border: `1px solid ${colors.border.default}`, objectFit: 'contain',
-                    }} />
-                  ))}
-                </div>
-              )}
-              {!section.topic.notes && (!section.topic.image_urls || section.topic.image_urls.length === 0) && (
-                <p style={{ fontSize: font.size.md, color: colors.text.muted, fontStyle: 'italic' }}>No notes added for this topic</p>
-              )}
+          {/* Sync topics grouped by type */}
+          {section.topics && section.type && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {section.topics.map((topic) => {
+                const tColor = TOPIC_COLORS[topic.type] || '#7C3AED';
+                return (
+                  <div key={topic.id} style={{
+                    padding: '16px 20px', borderRadius: '10px',
+                    backgroundColor: colors.bg.surface, border: `1px solid ${colors.border.default}`,
+                    borderLeft: `3px solid ${tColor}`,
+                  }}>
+                    <div style={{ fontSize: font.size.md, fontWeight: 600, color: colors.text.primary, marginBottom: topic.notes ? '6px' : 0 }}>
+                      {topic.title || 'Untitled'}
+                    </div>
+                    {topic.notes && (
+                      <p style={{ fontSize: font.size.sm, color: colors.text.secondary, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+                        {topic.notes}
+                      </p>
+                    )}
+                    {topic.image_urls && topic.image_urls.length > 0 && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                        {topic.image_urls.map((url, i) => (
+                          <img key={i} src={url} alt="" style={{ maxHeight: '200px', borderRadius: '8px', border: `1px solid ${colors.border.default}`, objectFit: 'contain' }} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
