@@ -26,7 +26,7 @@ export function ZenView({ profile, onExit }: ZenViewProps) {
       autoFocus
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
-        backgroundColor: '#0A0A0A', fontFamily: font.family,
+        backgroundColor: colors.bg.primary, fontFamily: font.family,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         outline: 'none',
       }}

@@ -57,7 +57,7 @@ export function PresentView({ members, onExit, syncContent }: PresentViewProps) 
       onKeyDown={handleKeyDown}
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
-        backgroundColor: '#0A0A0A', fontFamily: font.family,
+        backgroundColor: colors.bg.primary, fontFamily: font.family,
         display: 'flex', flexDirection: 'column',
         outline: 'none',
       }}
