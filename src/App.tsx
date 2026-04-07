@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react';
+import { _bindThemeStore } from './lib/theme';
+import { useThemeStore } from './stores/themeStore';
+
+// Bind the theme store to the theme bridge immediately
+_bindThemeStore(() => useThemeStore.getState().theme);
+
 import { TopBar } from './components/layout/TopBar';
 import { FilterBar } from './components/layout/FilterBar';
 import { NewTaskInput } from './components/task/NewTaskInput';
