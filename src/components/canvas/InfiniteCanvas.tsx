@@ -26,7 +26,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     positions, stickyNotes, connections, frames, zoom, panX, panY,
     setZoom, setPan, selectedItemId, setSelectedItem,
     updatePosition, createStickyNote, createTaskPosition, snapToGrid,
-    createConnection, createFrame, updateFrame,
+    createConnection, updateConnection, deleteConnection, createFrame, updateFrame,
   } = useCanvasStore();
   const tasks = useTaskStore((s) => s.tasks);
 
@@ -36,7 +36,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
     id: string; startX: number; startY: number; origX: number; origY: number;
   } | null>(null);
   const [showMinimap] = useState(true);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; positionId?: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; positionId?: string; connectionId?: string } | null>(null);
   // Connection drawing state
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
   const [connectingMouse, setConnectingMouse] = useState<{ x: number; y: number } | null>(null);
@@ -331,7 +331,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
             const cardW = 280;
             const arrows: React.ReactNode[] = [];
 
-            // Manual connections
+            // Render all connections with style based on type
             for (const conn of connections) {
               const from = positions.find((p) => p.id === conn.from_position_id);
               const to = positions.find((p) => p.id === conn.to_position_id);
@@ -340,19 +340,42 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                 { x: from.x, y: from.y, w: from.width || cardW, h: cardH },
                 { x: to.x, y: to.y, w: to.width || cardW, h: cardH }
               );
+              const type = conn.connection_type || 'link';
+              const arrowColor = type === 'blocker' ? '#EF4444' : type === 'dependency' ? '#F59E0B' : (conn.color || colors.accent.purple);
+              const dash = type === 'blocker' ? '8 4' : type === 'dependency' ? '4 4' : 'none';
+              const opacity = type === 'link' ? 0.45 : 0.5;
+              const width = type === 'link' ? 1.8 : 2;
               arrows.push(
-                <svg key={`conn-${conn.id}`} style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none' }}>
-                  <defs><marker id={`ma-${conn.id}`} markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill={conn.color || colors.accent.purple} fillOpacity={0.7} /></marker></defs>
-                  <path d={path} stroke={conn.color || colors.accent.purple} strokeOpacity={0.45} strokeWidth={1.8} fill="none" markerEnd={`url(#ma-${conn.id})`} />
+                <svg key={`conn-${conn.id}`} style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible' }}>
+                  <defs><marker id={`ma-${conn.id}`} markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill={arrowColor} fillOpacity={0.7} /></marker></defs>
+                  {/* Invisible fat hitbox for clicking */}
+                  <path d={path} stroke="transparent" strokeWidth={12} fill="none" style={{ cursor: 'pointer', pointerEvents: 'stroke' }}
+                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: (e.clientX - 260 - panX) / zoom, y: (e.clientY - panY) / zoom, connectionId: conn.id }); }}
+                  />
+                  {/* Visible arrow */}
+                  <path d={path} stroke={arrowColor} strokeOpacity={opacity} strokeWidth={width} strokeDasharray={dash} fill="none" markerEnd={`url(#ma-${conn.id})`} style={{ pointerEvents: 'none' }} />
+                  {/* Type label */}
+                  {type !== 'link' && (() => {
+                    const midX = (from.x + (from.width || cardW) / 2 + to.x + (to.width || cardW) / 2) / 2;
+                    const midY = (from.y + cardH / 2 + to.y + cardH / 2) / 2;
+                    return <text x={midX} y={midY - 6} fontSize="9" fill={arrowColor} fillOpacity={0.7} textAnchor="middle" style={{ pointerEvents: 'none', fontFamily: font.family, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{type}</text>;
+                  })()}
                 </svg>
               );
             }
 
-            // Dependency arrows (task A depends on task B → draw B → A)
+            // Dependency arrows from task_dependencies (auto-drawn)
             for (const dep of deps) {
+              // Skip if already has a manual connection between these tasks
               const fromPos = positions.find((p) => p.item_type === 'task' && p.item_id === dep.depends_on);
               const toPos = positions.find((p) => p.item_type === 'task' && p.item_id === dep.task_id);
               if (!fromPos || !toPos) continue;
+              // Check if a manual connection already covers this
+              const alreadyCovered = connections.some((c) =>
+                (c.from_position_id === fromPos.id && c.to_position_id === toPos.id) ||
+                (c.from_position_id === toPos.id && c.to_position_id === fromPos.id)
+              );
+              if (alreadyCovered) continue;
               const { path } = computeArrowPath(
                 { x: fromPos.x, y: fromPos.y, w: fromPos.width || cardW, h: cardH },
                 { x: toPos.x, y: toPos.y, w: toPos.width || cardW, h: cardH }
@@ -522,7 +545,9 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
           const ctxPos = contextMenu.positionId ? positions.find((p) => p.id === contextMenu.positionId) : null;
           const ctxTask = ctxPos?.item_type === 'task' && ctxPos.item_id ? tasks.find((t) => t.id === ctxPos.item_id) : null;
           const ctxIsSticky = ctxPos?.item_type === 'sticky';
+          const ctxConn = contextMenu.connectionId ? connections.find((c) => c.id === contextMenu.connectionId) : null;
           const updateTask = useTaskStore.getState().updateTask;
+          const { addDependency } = useTaskStore.getState();
           const { deleteStickyNote } = useCanvasStore.getState();
 
           return (
@@ -567,7 +592,41 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                 </>
               )}
               {/* Canvas-level options (right-click on empty space) */}
-              {!ctxPos && (
+              {/* Connection/arrow options */}
+              {ctxConn && (() => {
+                const fromPos = positions.find((p) => p.id === ctxConn.from_position_id);
+                const toPos = positions.find((p) => p.id === ctxConn.to_position_id);
+                const fromTask = fromPos?.item_id ? tasks.find((t) => t.id === fromPos.item_id) : null;
+                const toTask = toPos?.item_id ? tasks.find((t) => t.id === toPos.item_id) : null;
+                return (
+                  <>
+                    <div style={{ padding: '6px 12px', fontSize: font.size.xs, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Arrow Type</div>
+                    <CtxBtn onClick={() => { updateConnection(ctxConn.id, { connection_type: 'link', color: colors.accent.purple }); setContextMenu(null); }}>
+                      <span style={{ color: colors.accent.purple }}>━━</span> Link {ctxConn.connection_type === 'link' ? '✓' : ''}
+                    </CtxBtn>
+                    <CtxBtn onClick={() => {
+                      updateConnection(ctxConn.id, { connection_type: 'blocker', color: '#EF4444' });
+                      // Auto-create task dependency: toTask is blocked by fromTask
+                      if (fromTask && toTask) addDependency(toTask.id, fromTask.id, toTask.team_id);
+                      setContextMenu(null);
+                    }}>
+                      <span style={{ color: '#EF4444' }}>- - -</span> Blocker {ctxConn.connection_type === 'blocker' ? '✓' : ''}
+                    </CtxBtn>
+                    <CtxBtn onClick={() => {
+                      updateConnection(ctxConn.id, { connection_type: 'dependency', color: '#F59E0B' });
+                      // Auto-create dependency: toTask depends on fromTask
+                      if (fromTask && toTask) addDependency(toTask.id, fromTask.id, toTask.team_id);
+                      setContextMenu(null);
+                    }}>
+                      <span style={{ color: '#F59E0B' }}>· · ·</span> Dependency {ctxConn.connection_type === 'dependency' ? '✓' : ''}
+                    </CtxBtn>
+                    <div style={{ height: '1px', backgroundColor: colors.border.default, margin: '4px 0' }} />
+                    <CtxBtn onClick={() => { deleteConnection(ctxConn.id); setContextMenu(null); }}>Delete Arrow</CtxBtn>
+                  </>
+                );
+              })()}
+
+              {!ctxPos && !ctxConn && (
                 <>
                   <CtxBtn onClick={() => { handleAddSticky('#7C3AED'); }}>Add Sticky Note</CtxBtn>
                   <CtxBtn onClick={() => { if (contextMenu) { createFrame(teamId, contextMenu.x, contextMenu.y); setContextMenu(null); } }}>Add Frame</CtxBtn>

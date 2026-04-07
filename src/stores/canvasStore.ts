@@ -3,13 +3,14 @@ import type { CanvasPosition, StickyNote, StickyColor } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import { CANVAS_GRID_SIZE } from '../lib/constants';
 
-interface CanvasConnection {
+export interface CanvasConnection {
   id: string;
   team_id: string;
   from_position_id: string;
   to_position_id: string;
   color: string;
   label: string | null;
+  connection_type: 'link' | 'blocker' | 'dependency';
 }
 
 export interface CanvasFrame {
@@ -46,7 +47,8 @@ interface CanvasState {
   deleteFrame: (id: string) => Promise<void>;
 
   // Connections
-  createConnection: (teamId: string, fromId: string, toId: string, color?: string) => Promise<void>;
+  createConnection: (teamId: string, fromId: string, toId: string, color?: string, type?: CanvasConnection['connection_type']) => Promise<void>;
+  updateConnection: (id: string, updates: Partial<CanvasConnection>) => Promise<void>;
   deleteConnection: (id: string) => Promise<void>;
 
   // Positions
@@ -97,19 +99,15 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set((s) => ({ frames: s.frames.filter((f) => f.id !== id) }));
   },
 
-  createConnection: async (teamId, fromId, toId, color = '#7C3AED') => {
-    console.log('[Arrow Store] Creating connection:', { teamId, fromId, toId });
-    const { data, error } = await supabase.from('canvas_connections').insert({ team_id: teamId, from_position_id: fromId, to_position_id: toId, color }).select().single();
-    console.log('[Arrow Store] Result:', { data, error });
-    if (error) { console.error('Connection create failed:', error.message); alert(`Connection failed: ${error.message}`); return; }
-    if (data) {
-      set((s) => {
-        console.log('[Arrow Store] Adding to connections array. Current count:', s.connections.length);
-        return { connections: [...s.connections, data] };
-      });
-    } else {
-      console.warn('[Arrow Store] No data returned from insert');
-    }
+  createConnection: async (teamId, fromId, toId, color = '#7C3AED', type = 'link') => {
+    const { data, error } = await supabase.from('canvas_connections').insert({ team_id: teamId, from_position_id: fromId, to_position_id: toId, color, connection_type: type }).select().single();
+    if (error) { console.error('Connection create failed:', error.message); return; }
+    if (data) set((s) => ({ connections: [...s.connections, data] }));
+  },
+
+  updateConnection: async (id, updates) => {
+    await supabase.from('canvas_connections').update(updates).eq('id', id);
+    set((s) => ({ connections: s.connections.map((c) => (c.id === id ? { ...c, ...updates } : c)) }));
   },
 
   deleteConnection: async (id) => {
