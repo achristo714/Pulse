@@ -27,6 +27,8 @@ export interface Task {
   status: TaskStatus;
   category: string;
   assigned_to: string | null;
+  assignees: string[];
+  is_personal: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -141,6 +143,18 @@ export interface Goal {
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface TaskAttachment {
+  id: string;
+  task_id: string;
+  team_id: string;
+  file_name: string;
+  file_type: 'image' | 'pdf' | 'video' | 'other';
+  storage_path: string;
+  file_size: number | null;
+  uploaded_by: string | null;
+  created_at: string;
 }
 
 export interface TaskComment {

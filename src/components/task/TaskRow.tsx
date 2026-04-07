@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { StatusCircle } from './StatusCircle';
 import { QuickAssign } from './QuickAssign';
 import { SubtaskCount } from './SubtaskList';
+import { Avatar } from '../ui/Avatar';
 import { useTaskStore } from '../../stores/taskStore';
 import { colors, font } from '../../lib/theme';
 import type { Task, Profile } from '../../lib/types';
@@ -184,9 +185,20 @@ export function TaskRow({ task, members, onClick }: TaskRowProps) {
           )}
         </div>
 
-        {/* Col 4: Assignee */}
+        {/* Col 4: Assignees */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
-          {task.assigned_to ? (
+          {(task.assignees && task.assignees.length > 0) ? (
+            <div style={{ display: 'flex' }}>
+              {task.assignees.slice(0, 3).map((id) => {
+                const m = members.find((mm) => mm.id === id);
+                if (!m) return null;
+                return <Avatar key={id} name={m.display_name} url={m.avatar_url} size={22} className="" />;
+              })}
+              {task.assignees.length > 3 && (
+                <span style={{ fontSize: '10px', color: colors.text.muted, marginLeft: '2px' }}>+{task.assignees.length - 3}</span>
+              )}
+            </div>
+          ) : task.assigned_to ? (
             <QuickAssign
               assignedTo={task.assigned_to}
               members={members}

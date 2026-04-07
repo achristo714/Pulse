@@ -179,13 +179,42 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
           </div>
         </Section>
 
-        {/* Assigned To */}
-        <Section label="Assigned To">
-          <select value={task.assigned_to || ''} onChange={(e) => updateTask(task.id, { assigned_to: e.target.value || null })} style={{ ...inputStyle, WebkitAppearance: 'none', appearance: 'auto' as any }}>
-            <option value="">Unassigned</option>
-            {members.map((m) => <option key={m.id} value={m.id}>{m.display_name}</option>)}
+        {/* Assignees (multi-select) */}
+        <div>
+          <SectionLabel>Assignees</SectionLabel>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            {(task.assignees || []).map((id) => {
+              const m = members.find((mm) => mm.id === id);
+              if (!m) return null;
+              return (
+                <span key={id} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  padding: '3px 8px 3px 4px', borderRadius: '16px',
+                  backgroundColor: colors.bg.surfaceActive, fontSize: font.size.xs,
+                  color: colors.text.primary,
+                }}>
+                  <Avatar name={m.display_name} url={m.avatar_url} size={18} />
+                  {m.display_name}
+                  <button onClick={() => {
+                    const next = (task.assignees || []).filter((a) => a !== id);
+                    updateTask(task.id, { assignees: next, assigned_to: next[0] || null });
+                  }} style={{ background: 'none', border: 'none', color: colors.text.muted, cursor: 'pointer', fontSize: '10px', padding: '0 2px' }}>✕</button>
+                </span>
+              );
+            })}
+          </div>
+          <select value="" onChange={(e) => {
+            if (!e.target.value) return;
+            const next = [...(task.assignees || []), e.target.value];
+            updateTask(task.id, { assignees: next, assigned_to: next[0] || null });
+            e.target.value = '';
+          }} style={{ ...inputStyle, appearance: 'auto' as any, fontSize: font.size.xs, color: colors.text.muted }}>
+            <option value="">+ Add assignee...</option>
+            {members.filter((m) => !(task.assignees || []).includes(m.id)).map((m) => (
+              <option key={m.id} value={m.id}>{m.display_name}</option>
+            ))}
           </select>
-        </Section>
+        </div>
 
         {/* Due Date + Project Number */}
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -357,32 +386,28 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
           </div>
         </div>
 
-        {/* Images */}
+        {/* Attachments (images, PDFs, videos) */}
         <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <SectionLabel>Images</SectionLabel>
-            <span style={{ fontSize: font.size.xs, color: colors.text.muted }}>{task.images?.length || 0}/10</span>
-          </div>
+          <SectionLabel>Attachments</SectionLabel>
+          {/* Images */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
             {task.images?.map((img) => (
               <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '6px', overflow: 'hidden', backgroundColor: colors.bg.primary }}>
                 <img src={getImageUrl(img.storage_path)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button
-                  onClick={() => deleteImage(img.id, img.storage_path)}
-                  style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}
-                >✕</button>
+                <button onClick={() => deleteImage(img.id, img.storage_path)} style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.6)', color: 'white', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}>✕</button>
               </div>
             ))}
           </div>
-          {(task.images?.length || 0) < 10 && (
-            <>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => e.target.files && handleImageUpload(e.target.files)} />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{ width: '100%', padding: '8px', backgroundColor: 'transparent', border: `1px dashed ${colors.border.default}`, borderRadius: '6px', color: colors.text.secondary, fontSize: font.size.sm, cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 150ms' }}
-              >Upload Image</button>
-            </>
-          )}
+          <input ref={fileInputRef} type="file" accept="image/*,application/pdf,video/*" multiple style={{ display: 'none' }} onChange={(e) => e.target.files && handleImageUpload(e.target.files)} />
+          <button onClick={() => fileInputRef.current?.click()} style={{
+            width: '100%', padding: '10px', backgroundColor: 'transparent',
+            border: `1px dashed ${colors.border.default}`, borderRadius: '8px',
+            color: colors.text.secondary, fontSize: font.size.sm, cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            Upload files (images, PDF, video)
+          </button>
         </div>
 
         {/* Comments */}
