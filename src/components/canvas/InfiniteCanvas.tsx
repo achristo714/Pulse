@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { TaskCard } from '../task/TaskCard';
 import { StickyNoteCard } from './StickyNote';
 import { CanvasFrame } from './CanvasFrame';
@@ -31,6 +31,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   const tasks = useTaskStore((s) => s.tasks);
 
   const [isPanning, setIsPanning] = useState(false);
+  const [spaceHeld, setSpaceHeld] = useState(false);
   const [dragState, setDragState] = useState<{
     id: string; startX: number; startY: number; origX: number; origY: number;
   } | null>(null);
@@ -50,6 +51,15 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   // Ref for screenToCanvas (used in callbacks)
   const screenToCanvasRef = useRef((_x: number, _y: number) => ({ x: 0, y: 0 }));
 
+  // Space key for pan mode
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => { if (e.code === 'Space' && !e.repeat && !(e.target as HTMLElement).matches('input,textarea,[contenteditable]')) { e.preventDefault(); setSpaceHeld(true); } };
+    const up = (e: KeyboardEvent) => { if (e.code === 'Space') setSpaceHeld(false); };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, []);
+
   const screenToCanvas = useCallback((clientX: number, clientY: number) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
@@ -58,13 +68,13 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   screenToCanvasRef.current = screenToCanvas;
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1) {
+    if (e.button === 1 || (e.button === 0 && spaceHeld)) {
       setIsPanning(true);
+      e.preventDefault();
       return;
     }
     if (e.button === 0 && e.target === canvasRef.current) {
       setContextMenu(null);
-      // Cancel connect mode if clicking empty space
       if (connectingFrom) {
         setConnectingFrom(null);
         setConnectingMouse(null);
@@ -153,14 +163,21 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const newZoom = Math.max(0.25, Math.min(4, zoom + delta));
-    const scale = newZoom / zoom;
-    setPan(mouseX - (mouseX - panX) * scale, mouseY - (mouseY - panY) * scale);
-    setZoom(newZoom);
+
+    // Pinch-to-zoom (Ctrl+scroll) or regular scroll zoom
+    if (e.ctrlKey || e.metaKey) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const delta = e.deltaY > 0 ? -0.05 : 0.05;
+      const newZoom = Math.max(0.25, Math.min(4, zoom + delta));
+      const scale = newZoom / zoom;
+      setPan(mouseX - (mouseX - panX) * scale, mouseY - (mouseY - panY) * scale);
+      setZoom(newZoom);
+    } else {
+      // Two-finger trackpad pan
+      setPan(panX - e.deltaX, panY - e.deltaY);
+    }
   }, [zoom, panX, panY, setZoom, setPan]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
@@ -266,7 +283,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
       <div
         ref={canvasRef}
-        style={{ position: 'absolute', inset: 0, left: 260, cursor: connectingFrom ? 'crosshair' : isPanning ? 'grabbing' : isSelecting ? 'crosshair' : 'grab' }}
+        style={{ position: 'absolute', inset: 0, left: 260, cursor: connectingFrom ? 'crosshair' : isPanning ? 'grabbing' : spaceHeld ? 'grab' : 'default' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -445,12 +462,12 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                   handleCardMouseDown(pos.id, e);
                 }}
                 onClick={() => {
-                  console.log('[Arrow] onClick fired', { connectingFrom, posId: pos.id });
                   if (connectingFrom && connectingFrom !== pos.id) {
-                    console.log('[Arrow] Creating connection', connectingFrom, '→', pos.id);
                     createConnection(teamId, connectingFrom, pos.id);
                     setConnectingFrom(null);
                     setConnectingMouse(null);
+                  } else if (!connectingFrom) {
+                    onTaskDoubleClick(task.id);
                   }
                 }}
                 onStartConnect={() => {
