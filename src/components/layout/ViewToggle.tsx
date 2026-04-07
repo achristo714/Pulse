@@ -17,25 +17,26 @@ export function ViewToggle() {
   const { viewMode, setViewMode } = useUIStore();
 
   return (
-    <div style={{
-      display: 'flex', backgroundColor: colors.bg.primary, borderRadius: '22px',
-      padding: '3px', border: `1px solid ${colors.border.default}`, gap: '2px',
-    }}>
+    <div style={{ display: 'flex', gap: '2px', padding: '4px 0' }}>
       {TABS.map((tab) => {
         const active = viewMode === tab.key;
         return (
           <button
             key={tab.key}
             style={{
-              padding: '6px 12px', borderRadius: '18px', fontSize: font.size.xs, fontWeight: font.weight.medium,
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: font.size.xs,
+              fontWeight: font.weight.medium,
               color: active ? (tab.key === 'dashboard' ? colors.bg.primary : '#fff') : colors.text.secondary,
               backgroundColor: active ? tab.accent : 'transparent',
-              border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 200ms ease-out',
-              boxShadow: active ? `0 2px 8px ${tab.accent}30` : 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 150ms ease-out',
+              whiteSpace: 'nowrap',
             }}
             onClick={() => setViewMode(tab.key)}
-            onMouseOver={(e) => { if (!active) { e.currentTarget.style.color = tab.accent; e.currentTarget.style.backgroundColor = `${tab.accent}10`; } }}
-            onMouseOut={(e) => { if (!active) { e.currentTarget.style.color = colors.text.secondary; e.currentTarget.style.backgroundColor = 'transparent'; } }}
           >
             {tab.label}
           </button>

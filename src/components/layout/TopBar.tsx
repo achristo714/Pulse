@@ -18,71 +18,83 @@ interface TopBarProps {
 export function TopBar({ profile, onSignOut, onNewTask, onPresent, onZen, onTextToTasks, onTheme }: TopBarProps) {
   const setReportModalOpen = useUIStore((s) => s.setReportModalOpen);
   const [showMenu, setShowMenu] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   return (
-    <div style={{
-      height: '60px', backgroundColor: colors.bg.surface,
-      borderBottom: `1px solid ${colors.border.default}`,
-      display: 'flex', alignItems: 'center', padding: '0 24px', gap: '16px', flexShrink: 0, fontFamily: font.family,
-    }}>
-      <h1 style={{ fontSize: font.size.xl, fontWeight: font.weight.semibold, color: colors.text.primary, letterSpacing: '-0.01em' }}>Pulse</h1>
+    <div style={{ backgroundColor: colors.bg.surface, borderBottom: `1px solid ${colors.border.default}`, flexShrink: 0, fontFamily: font.family }}>
+      {/* Top row: logo + actions */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', height: '52px', gap: '8px' }}>
+        <h1 style={{ fontSize: font.size.xl, fontWeight: font.weight.semibold, color: colors.text.primary, letterSpacing: '-0.01em', marginRight: '8px' }}>Pulse</h1>
 
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-        <ViewToggle />
-      </div>
+        <div style={{ flex: 1 }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {onTheme && <TopBtn onClick={onTheme} title="Theme">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M8 2a6 6 0 0 0 0 12V2z" fill="currentColor" opacity="0.3"/><circle cx="6" cy="6" r="1.2" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor" opacity="0.5"/><circle cx="7" cy="10" r="0.8" fill="currentColor" opacity="0.4"/></svg>
-        </TopBtn>}
-        {onTextToTasks && <TopBtn onClick={onTextToTasks} title="Paste text → tasks (T)">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-        </TopBtn>}
-        {onZen && <TopBtn onClick={onZen} title="Focus mode (Z)">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
-        </TopBtn>}
-        {onPresent && <TopBtn onClick={onPresent} title="Present mode (P)">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6.5 6L10.5 8.5L6.5 11V6Z" fill="currentColor"/><path d="M5 13.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-        </TopBtn>}
+        {/* Action icons — desktop */}
+        <div className="desktop-only" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          {onTheme && <IconBtn onClick={onTheme} title="Theme"><PaletteIcon /></IconBtn>}
+          {onTextToTasks && <IconBtn onClick={onTextToTasks} title="Paste"><ClipboardIcon /></IconBtn>}
+          {onZen && <IconBtn onClick={onZen} title="Focus"><FocusIcon /></IconBtn>}
+          {onPresent && <IconBtn onClick={onPresent} title="Present"><PresentIcon /></IconBtn>}
+        </div>
+
         <button onClick={() => setReportModalOpen(true)} style={{
-          padding: '6px 12px', backgroundColor: 'transparent', color: colors.text.secondary,
-          fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '6px',
-          border: `1px solid ${colors.border.default}`, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
-        }}
-          onMouseOver={(e) => { e.currentTarget.style.borderColor = colors.border.focus; e.currentTarget.style.color = colors.text.primary; }}
-          onMouseOut={(e) => { e.currentTarget.style.borderColor = colors.border.default; e.currentTarget.style.color = colors.text.secondary; }}
-        >Generate Report</button>
+          padding: '5px 10px', backgroundColor: 'transparent', color: colors.text.secondary,
+          fontSize: font.size.xs, fontWeight: font.weight.medium, borderRadius: '6px',
+          border: `1px solid ${colors.border.default}`, cursor: 'pointer', fontFamily: 'inherit',
+        }}>Report</button>
 
         <button onClick={onNewTask} style={{
-          padding: '6px 14px', backgroundColor: colors.accent.purple, color: '#FFFFFF',
-          fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '6px',
-          border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'background-color 150ms',
-        }}
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = colors.accent.purpleHover)}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = colors.accent.purple)}
-        >+ New Task</button>
+          padding: '5px 12px', backgroundColor: colors.accent.purple, color: '#FFFFFF',
+          fontSize: font.size.xs, fontWeight: font.weight.medium, borderRadius: '6px',
+          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+        }}>+ New</button>
+
+        {/* Mobile menu toggle */}
+        <div className="mobile-only" style={{ display: 'none' }}>
+          <IconBtn onClick={() => setShowActions(!showActions)} title="More">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="4" cy="8" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="12" cy="8" r="1.2" fill="currentColor"/></svg>
+          </IconBtn>
+        </div>
 
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowMenu(!showMenu)} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' }}>
-            <Avatar name={profile.display_name} url={profile.avatar_url} size={30} />
-            <span style={{ fontSize: font.size.base, color: colors.text.secondary }}>{profile.display_name}</span>
+          <button onClick={() => setShowMenu(!showMenu)} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' }}>
+            <Avatar name={profile.display_name} url={profile.avatar_url} size={28} />
           </button>
           {showMenu && (
             <div style={{
-              position: 'absolute', right: 0, top: '100%', marginTop: '8px', width: '200px',
+              position: 'absolute', right: 0, top: '100%', marginTop: '8px', width: '180px',
               backgroundColor: colors.bg.surface, border: `1px solid ${colors.border.default}`,
               borderRadius: '8px', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', zIndex: 50, overflow: 'hidden',
             }}>
-              <div style={{ padding: '12px 14px', borderBottom: `1px solid ${colors.border.default}` }}>
-                <div style={{ fontSize: font.size.base, color: colors.text.primary, fontWeight: font.weight.medium }}>{profile.display_name}</div>
+              <div style={{ padding: '10px 14px', borderBottom: `1px solid ${colors.border.default}` }}>
+                <div style={{ fontSize: font.size.sm, color: colors.text.primary, fontWeight: font.weight.medium }}>{profile.display_name}</div>
                 <div style={{ fontSize: font.size.xs, color: colors.text.muted, marginTop: '2px' }}>{profile.role}</div>
               </div>
+              {onTheme && <MenuBtn onClick={() => { setShowMenu(false); onTheme(); }}>Appearance</MenuBtn>}
               <MenuBtn onClick={() => { setShowMenu(false); onSignOut(); }}>Sign Out</MenuBtn>
             </div>
           )}
         </div>
       </div>
+
+      {/* Nav tabs — scrollable row */}
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderTop: `1px solid ${colors.border.subtle}`, padding: '0 8px' }}>
+        <div style={{ display: 'flex', minWidth: 'max-content' }}>
+          <ViewToggle />
+        </div>
+      </div>
     </div>
+  );
+}
+
+function IconBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={onClick} title={title} onMouseOver={() => setH(true)} onMouseOut={() => setH(false)} style={{
+      width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      borderRadius: '6px', backgroundColor: h ? colors.bg.surfaceHover : 'transparent',
+      border: 'none', color: h ? colors.text.primary : colors.text.muted,
+      cursor: 'pointer', transition: 'all 150ms', padding: 0,
+    }}>{children}</button>
   );
 }
 
@@ -98,13 +110,7 @@ function MenuBtn({ onClick, children }: { onClick: () => void; children: React.R
   );
 }
 
-function TopBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
-  const [h, setH] = useState(false);
-  return (
-    <button onClick={onClick} title={title} onMouseOver={() => setH(true)} onMouseOut={() => setH(false)} style={{
-      padding: '6px 10px', backgroundColor: 'transparent', color: h ? colors.text.primary : colors.text.muted,
-      fontSize: font.size.xs, borderRadius: '6px', border: `1px solid ${h ? colors.border.default : 'transparent'}`,
-      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
-    }}>{children}</button>
-  );
-}
+function PaletteIcon() { return <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M8 2a6 6 0 0 0 0 12V2z" fill="currentColor" opacity="0.3"/><circle cx="6" cy="6" r="1" fill="currentColor"/></svg>; }
+function ClipboardIcon() { return <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>; }
+function FocusIcon() { return <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>; }
+function PresentIcon() { return <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6.5 6L10.5 8.5L6.5 11V6Z" fill="currentColor"/></svg>; }

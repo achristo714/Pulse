@@ -182,7 +182,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family, overflow: 'hidden' }}>
       <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} onNewTask={() => setQuickAddOpen(true)} onPresent={() => setPresentMode(true)} onZen={() => setZenMode(true)} onTextToTasks={() => setTextToTasksOpen(true)} onTheme={() => setThemeOpen(true)} />
 
       {viewMode === 'list' && (
