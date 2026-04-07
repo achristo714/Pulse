@@ -74,7 +74,6 @@ input, select, textarea, button {
   min-height: 180px;
   padding: 14px 16px;
   font-size: 14px;
-  color: #F5F5F5;
   line-height: 1.7;
 }
 .tiptap p {
@@ -83,7 +82,7 @@ input, select, textarea, button {
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #666666;
+  opacity: 0.4;
   pointer-events: none;
   height: 0;
 }
@@ -92,20 +91,17 @@ input, select, textarea, button {
   font-weight: 600;
   margin: 16px 0 8px;
   letter-spacing: -0.01em;
-  color: #F5F5F5;
 }
 .tiptap h2 {
   font-size: 18px;
   font-weight: 600;
   margin: 14px 0 6px;
   letter-spacing: -0.01em;
-  color: #F5F5F5;
 }
 .tiptap h3 {
   font-size: 15px;
   font-weight: 600;
   margin: 12px 0 4px;
-  color: #A0A0A0;
 }
 .tiptap ul, .tiptap ol {
   padding-left: 1.5em;
@@ -122,7 +118,7 @@ input, select, textarea, button {
 }
 .tiptap s {
   text-decoration: line-through;
-  color: #666666;
+  opacity: 0.5;
 }
 .tiptap code {
   background: #2A2A2A;
