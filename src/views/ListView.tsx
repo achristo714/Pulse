@@ -187,7 +187,7 @@ function CategoryHeader({ label, color, count, collapsed, onToggle }: { label: s
       style={{
         width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
         padding: '14px 28px',
-        backgroundColor: hovered ? colors.bg.surfaceHover : 'rgba(15,15,15,0.5)',
+        backgroundColor: hovered ? colors.bg.surfaceHover : colors.bg.surfaceActive,
         border: 'none', borderBottom: `1px solid ${colors.border.default}`,
         cursor: 'pointer', fontFamily: 'inherit', transition: 'background-color 150ms',
       }}
