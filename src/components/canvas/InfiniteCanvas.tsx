@@ -9,6 +9,8 @@ import { useCanvasStore } from '../../stores/canvasStore';
 import { useTaskStore } from '../../stores/taskStore';
 import { CANVAS_GRID_SIZE, CATEGORY_CONFIG, CATEGORIES } from '../../lib/constants';
 import { colors, font } from '../../lib/theme';
+import { computeArrowPath } from '../../lib/arrowUtils';
+import { useTaskStore as useTaskStoreArrows } from '../../stores/taskStore';
 import type { Profile, StickyColor, TaskCategory } from '../../lib/types';
 
 interface InfiniteCanvasProps {
@@ -305,75 +307,61 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
         {/* Transform layer */}
         <div style={{ transform: `translate(${panX}px, ${panY}px) scale(${zoom})`, transformOrigin: '0 0' }}>
-          {/* Connection arrows — only between nearby same-category cards */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-            <defs>
-              <marker id="arrowHead" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
-                <polygon points="0 0, 6 2.5, 0 5" fill="rgba(124,58,237,0.25)" />
-              </marker>
-            </defs>
-            {(() => {
-              const taskPositions = positions.filter((p) => p.item_type === 'task' && p.item_id);
-              const byCategory: Record<string, typeof taskPositions> = {};
-              for (const pos of taskPositions) {
-                const task = tasks.find((t) => t.id === pos.item_id);
-                if (!task) continue;
-                if (!byCategory[task.category]) byCategory[task.category] = [];
-                byCategory[task.category].push(pos);
-              }
-              const lines: React.ReactNode[] = [];
-              for (const cat of Object.keys(byCategory)) {
-                const cp = byCategory[cat];
-                if (cp.length < 2) continue;
-                cp.sort((a, b) => a.y === b.y ? a.x - b.x : a.y - b.y);
-                const catColor = CATEGORY_CONFIG[cat as keyof typeof CATEGORY_CONFIG]?.color || colors.accent.purple;
-                for (let i = 0; i < cp.length - 1; i++) {
-                  const from = cp[i]; const to = cp[i + 1];
-                  // Only draw arrow if cards are within 600px of each other
-                  const dist = Math.sqrt(Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2));
-                  if (dist > 600) continue;
-                  const fromX = from.x + (from.width || 280) / 2;
-                  const fromY = from.y + 80;
-                  const toX = to.x + (to.width || 280) / 2;
-                  const toY = to.y;
-                  const midY = (fromY + toY) / 2;
-                  lines.push(
-                    <path key={`${from.id}-${to.id}`} d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`} stroke={catColor} strokeOpacity={0.2} strokeWidth={1.5} fill="none" markerEnd="url(#arrowHead)" strokeDasharray="6 4" />
-                  );
-                }
-              }
-              return lines;
-            })()}
-          </svg>
+          {/* Smart arrows — manual connections + dependency arrows */}
+          {(() => {
+            const deps = useTaskStoreArrows.getState().allDependencies;
+            const cardH = 90;
+            const cardW = 280;
+            const arrows: React.ReactNode[] = [];
 
-          {/* Manual user-drawn connections + live draw line */}
-          {connections.map((conn) => {
-            const from = positions.find((p) => p.id === conn.from_position_id);
-            const to = positions.find((p) => p.id === conn.to_position_id);
-            if (!from || !to) return null;
-            const fromX = from.x + (from.width || 280) / 2;
-            const fromY = from.y + 80;
-            const toX = to.x + (to.width || 280) / 2;
-            const toY = to.y;
-            const midY = (fromY + toY) / 2;
-            return (
-              <svg key={conn.id} style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none' }}>
-                <defs><marker id={`ua-${conn.id}`} markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill={conn.color || colors.accent.purple} fillOpacity={0.6} /></marker></defs>
-                <path d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`}
-                  stroke={conn.color || colors.accent.purple} strokeOpacity={0.5} strokeWidth={2} fill="none" markerEnd={`url(#ua-${conn.id})`} />
-              </svg>
-            );
-          })}
-          {/* Connection being drawn */}
+            // Manual connections
+            for (const conn of connections) {
+              const from = positions.find((p) => p.id === conn.from_position_id);
+              const to = positions.find((p) => p.id === conn.to_position_id);
+              if (!from || !to) continue;
+              const { path } = computeArrowPath(
+                { x: from.x, y: from.y, w: from.width || cardW, h: cardH },
+                { x: to.x, y: to.y, w: to.width || cardW, h: cardH }
+              );
+              arrows.push(
+                <svg key={`conn-${conn.id}`} style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none' }}>
+                  <defs><marker id={`ma-${conn.id}`} markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill={conn.color || colors.accent.purple} fillOpacity={0.7} /></marker></defs>
+                  <path d={path} stroke={conn.color || colors.accent.purple} strokeOpacity={0.45} strokeWidth={1.8} fill="none" markerEnd={`url(#ma-${conn.id})`} />
+                </svg>
+              );
+            }
+
+            // Dependency arrows (task A depends on task B → draw B → A)
+            for (const dep of deps) {
+              const fromPos = positions.find((p) => p.item_type === 'task' && p.item_id === dep.depends_on);
+              const toPos = positions.find((p) => p.item_type === 'task' && p.item_id === dep.task_id);
+              if (!fromPos || !toPos) continue;
+              const { path } = computeArrowPath(
+                { x: fromPos.x, y: fromPos.y, w: fromPos.width || cardW, h: cardH },
+                { x: toPos.x, y: toPos.y, w: toPos.width || cardW, h: cardH }
+              );
+              arrows.push(
+                <svg key={`dep-${dep.id}`} style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none' }}>
+                  <defs><marker id={`da-${dep.id}`} markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0, 7 2.5, 0 5" fill="#EF4444" fillOpacity={0.6} /></marker></defs>
+                  <path d={path} stroke="#EF4444" strokeOpacity={0.35} strokeWidth={1.5} strokeDasharray="8 4" fill="none" markerEnd={`url(#da-${dep.id})`} />
+                </svg>
+              );
+            }
+
+            return arrows;
+          })()}
+
+          {/* Connection being drawn (live preview) */}
           {connectingFrom && connectingMouse && (() => {
             const from = positions.find((p) => p.id === connectingFrom);
             if (!from) return null;
-            const fromX = from.x + (from.width || 280) / 2;
-            const fromY = from.y + 80;
+            const { path } = computeArrowPath(
+              { x: from.x, y: from.y, w: from.width || 280, h: 90 },
+              { x: connectingMouse.x - 10, y: connectingMouse.y - 10, w: 20, h: 20 }
+            );
             return (
               <svg style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none' }}>
-                <line x1={fromX} y1={fromY} x2={connectingMouse.x} y2={connectingMouse.y}
-                  stroke={colors.accent.purple} strokeWidth={2} strokeDasharray="6 4" strokeOpacity={0.6} />
+                <path d={path} stroke={colors.accent.purple} strokeWidth={2} strokeDasharray="6 3" strokeOpacity={0.5} fill="none" />
               </svg>
             );
           })()}
