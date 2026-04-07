@@ -12,10 +12,22 @@ interface CanvasConnection {
   label: string | null;
 }
 
+export interface CanvasFrame {
+  id: string;
+  team_id: string;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+}
+
 interface CanvasState {
   positions: CanvasPosition[];
   stickyNotes: StickyNote[];
   connections: CanvasConnection[];
+  frames: CanvasFrame[];
   zoom: number;
   panX: number;
   panY: number;
@@ -27,6 +39,11 @@ interface CanvasState {
   setSelectedItem: (id: string | null) => void;
 
   fetchCanvasData: (teamId: string) => Promise<void>;
+
+  // Frames
+  createFrame: (teamId: string, x: number, y: number, label?: string, color?: string) => Promise<void>;
+  updateFrame: (id: string, updates: Partial<CanvasFrame>) => Promise<void>;
+  deleteFrame: (id: string) => Promise<void>;
 
   // Connections
   createConnection: (teamId: string, fromId: string, toId: string, color?: string) => Promise<void>;
@@ -54,6 +71,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   positions: [],
   stickyNotes: [],
   connections: [],
+  frames: [],
   zoom: 1,
   panX: 0,
   panY: 0,
@@ -63,6 +81,21 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   setZoom: (zoom) => set({ zoom: Math.max(0.25, Math.min(4, zoom)) }),
   setPan: (x, y) => set({ panX: x, panY: y }),
   setSelectedItem: (id) => set({ selectedItemId: id }),
+
+  createFrame: async (teamId, x, y, label = 'Frame', color = '#7C3AED') => {
+    const { data } = await supabase.from('canvas_frames').insert({ team_id: teamId, x, y, width: 600, height: 400, label, color }).select().single();
+    if (data) set((s) => ({ frames: [...s.frames, data] }));
+  },
+
+  updateFrame: async (id, updates) => {
+    set((s) => ({ frames: s.frames.map((f) => (f.id === id ? { ...f, ...updates } : f)) }));
+    await supabase.from('canvas_frames').update(updates).eq('id', id);
+  },
+
+  deleteFrame: async (id) => {
+    await supabase.from('canvas_frames').delete().eq('id', id);
+    set((s) => ({ frames: s.frames.filter((f) => f.id !== id) }));
+  },
 
   createConnection: async (teamId, fromId, toId, color = '#7C3AED') => {
     const { data, error } = await supabase.from('canvas_connections').insert({ team_id: teamId, from_position_id: fromId, to_position_id: toId, color }).select().single();
@@ -77,15 +110,17 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   fetchCanvasData: async (teamId) => {
     set({ loading: true });
-    const [posRes, stickyRes, connRes] = await Promise.all([
+    const [posRes, stickyRes, connRes, frameRes] = await Promise.all([
       supabase.from('canvas_positions').select('*').eq('team_id', teamId),
       supabase.from('sticky_notes').select('*').eq('team_id', teamId),
       supabase.from('canvas_connections').select('*').eq('team_id', teamId),
+      supabase.from('canvas_frames').select('*').eq('team_id', teamId),
     ]);
     set({
       positions: posRes.data || [],
       stickyNotes: stickyRes.data || [],
       connections: connRes.data || [],
+      frames: frameRes.data || [],
       loading: false,
     });
   },

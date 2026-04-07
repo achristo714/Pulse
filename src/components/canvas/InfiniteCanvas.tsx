@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { TaskCard } from '../task/TaskCard';
 import { StickyNoteCard } from './StickyNote';
+import { CanvasFrame } from './CanvasFrame';
 import { CanvasInbox } from './CanvasInbox';
 import { CanvasToolbar } from './CanvasToolbar';
 import { Minimap } from './Minimap';
@@ -20,10 +21,10 @@ interface InfiniteCanvasProps {
 export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: InfiniteCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const {
-    positions, stickyNotes, connections, zoom, panX, panY,
+    positions, stickyNotes, connections, frames, zoom, panX, panY,
     setZoom, setPan, selectedItemId, setSelectedItem,
     updatePosition, createStickyNote, createTaskPosition, snapToGrid,
-    createConnection,
+    createConnection, createFrame, updateFrame,
   } = useCanvasStore();
   const tasks = useTaskStore((s) => s.tasks);
 
@@ -125,14 +126,18 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
       setConnectingMouse(pos);
       return;
     }
-    // Single drag
+    // Single drag (positions or frames)
     if (dragState) {
       const dx = (e.clientX - dragState.startX) / zoom;
       const dy = (e.clientY - dragState.startY) / zoom;
       const snapped = e.shiftKey
         ? { x: dragState.origX + dx, y: dragState.origY + dy }
         : snapToGrid(dragState.origX + dx, dragState.origY + dy);
-      updatePosition(dragState.id, { x: snapped.x, y: snapped.y });
+      if (dragState.id.startsWith('frame-')) {
+        updateFrame(dragState.id.replace('frame-', ''), { x: snapped.x, y: snapped.y });
+      } else {
+        updatePosition(dragState.id, { x: snapped.x, y: snapped.y });
+      }
     }
   }, [isPanning, isSelecting, selectionRect, multiDrag, dragState, panX, panY, zoom, setPan, screenToCanvas, snapToGrid, updatePosition]);
 
@@ -453,6 +458,26 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
             });
           })()}
 
+          {/* Frames — render behind everything */}
+          {frames.map((frame) => (
+            <CanvasFrame
+              key={frame.id}
+              x={frame.x}
+              y={frame.y}
+              width={frame.width}
+              height={frame.height}
+              label={frame.label}
+              color={frame.color}
+              selected={selectedItemId === `frame-${frame.id}` || selectedIds.has(`frame-${frame.id}`)}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setSelectedItem(`frame-${frame.id}`);
+                setDragState({ id: `frame-${frame.id}`, startX: e.clientX, startY: e.clientY, origX: frame.x, origY: frame.y });
+              }}
+              onLabelChange={(label) => updateFrame(frame.id, { label })}
+            />
+          ))}
+
           {/* Task cards */}
           {positions.filter((p) => p.item_type === 'task' && p.item_id).map((pos) => {
             const task = tasks.find((t) => t.id === pos.item_id);
@@ -582,6 +607,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
               {!ctxPos && (
                 <>
                   <CtxBtn onClick={() => { handleAddSticky('#7C3AED'); }}>Add Sticky Note</CtxBtn>
+                  <CtxBtn onClick={() => { if (contextMenu) { createFrame(teamId, contextMenu.x, contextMenu.y); setContextMenu(null); } }}>Add Frame</CtxBtn>
                   {selectedIds.size > 0 && (
                     <CtxBtn onClick={() => { for (const id of selectedIds) handleStash(id); setContextMenu(null); }}>Stash Selected</CtxBtn>
                   )}
