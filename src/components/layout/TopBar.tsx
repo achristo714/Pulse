@@ -31,9 +31,15 @@ export function TopBar({ profile, onSignOut, onNewTask, onPresent, onZen, onText
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {onTextToTasks && <TopBtn onClick={onTextToTasks} title="Paste text → tasks (T)">📋 Paste</TopBtn>}
-        {onZen && <TopBtn onClick={onZen} title="Focus mode (Z)">🧘 Focus</TopBtn>}
-        {onPresent && <TopBtn onClick={onPresent} title="Present mode (P)">📺 Present</TopBtn>}
+        {onTextToTasks && <TopBtn onClick={onTextToTasks} title="Paste text → tasks (T)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+        </TopBtn>}
+        {onZen && <TopBtn onClick={onZen} title="Focus mode (Z)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
+        </TopBtn>}
+        {onPresent && <TopBtn onClick={onPresent} title="Present mode (P)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6.5 6L10.5 8.5L6.5 11V6Z" fill="currentColor"/><path d="M5 13.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+        </TopBtn>}
         <button onClick={() => setReportModalOpen(true)} style={{
           padding: '6px 12px', backgroundColor: 'transparent', color: colors.text.secondary,
           fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '6px',
