@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { format, isToday, isTomorrow, isPast, isThisWeek, startOfDay } from 'date-fns';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { useTaskStore } from '../stores/taskStore';
 import { useGoalStore } from '../stores/goalStore';
 import { useCategoryStore } from '../stores/categoryStore';
@@ -13,6 +14,7 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ profile }: DashboardViewProps) {
+  const isMobile = useIsMobile();
   const tasks = useTaskStore((s) => s.tasks);
   const { setSelectedTask } = useTaskStore();
   const { cycleStatus } = useTaskStore();
@@ -36,10 +38,10 @@ export function DashboardView({ profile }: DashboardViewProps) {
   const activeGoals = goals.filter((g) => g.status === 'active');
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', fontFamily: font.family, padding: '24px 32px' }}>
+    <div style={{ flex: 1, overflowY: 'auto', fontFamily: font.family, padding: isMobile ? '16px' : '24px 32px' }}>
       {/* Greeting */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: font.weight.semibold, color: colors.text.primary, margin: 0, letterSpacing: '-0.02em' }}>
+      <div style={{ marginBottom: isMobile ? '16px' : '28px' }}>
+        <h1 style={{ fontSize: isMobile ? '20px' : '26px', fontWeight: font.weight.semibold, color: colors.text.primary, margin: 0, letterSpacing: '-0.02em' }}>
           Good {getTimeOfDay()}, {profile.display_name}
         </h1>
         <p style={{ fontSize: font.size.md, color: colors.text.muted, marginTop: '4px' }}>
@@ -49,14 +51,14 @@ export function DashboardView({ profile }: DashboardViewProps) {
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px', marginBottom: '24px' }}>
         <StatCard label="My Tasks" value={totalMyTasks} accent={colors.accent.purple} />
         <StatCard label="In Progress" value={wipCount} accent={colors.status.wip} />
         <StatCard label="Done This Week" value={completedThisWeek} accent={colors.status.done} />
         <StatCard label="Active Goals" value={activeGoals.length} accent="#60A5FA" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
         {/* Left column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {overdue.length > 0 && (
