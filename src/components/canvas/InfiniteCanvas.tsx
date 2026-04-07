@@ -346,39 +346,37 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
             })()}
           </svg>
 
-          {/* Manual user-drawn connections */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
-            <defs>
-              <marker id="userArrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                <polygon points="0 0, 8 3, 0 6" fill="rgba(124,58,237,0.5)" />
-              </marker>
-            </defs>
-            {connections.map((conn) => {
-              const from = positions.find((p) => p.id === conn.from_position_id);
-              const to = positions.find((p) => p.id === conn.to_position_id);
-              if (!from || !to) return null;
-              const fromX = from.x + (from.width || 280) / 2;
-              const fromY = from.y + 80;
-              const toX = to.x + (to.width || 280) / 2;
-              const toY = to.y;
-              const midY = (fromY + toY) / 2;
-              return (
-                <path key={conn.id} d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`}
-                  stroke={conn.color || colors.accent.purple} strokeOpacity={0.5} strokeWidth={2} fill="none" markerEnd="url(#userArrow)" />
-              );
-            })}
-            {/* Connection being drawn */}
-            {connectingFrom && connectingMouse && (() => {
-              const from = positions.find((p) => p.id === connectingFrom);
-              if (!from) return null;
-              const fromX = from.x + (from.width || 280) / 2;
-              const fromY = from.y + 80;
-              return (
+          {/* Manual user-drawn connections + live draw line */}
+          {connections.map((conn) => {
+            const from = positions.find((p) => p.id === conn.from_position_id);
+            const to = positions.find((p) => p.id === conn.to_position_id);
+            if (!from || !to) return null;
+            const fromX = from.x + (from.width || 280) / 2;
+            const fromY = from.y + 80;
+            const toX = to.x + (to.width || 280) / 2;
+            const toY = to.y;
+            const midY = (fromY + toY) / 2;
+            return (
+              <svg key={conn.id} style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none' }}>
+                <defs><marker id={`ua-${conn.id}`} markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill={conn.color || colors.accent.purple} fillOpacity={0.6} /></marker></defs>
+                <path d={`M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`}
+                  stroke={conn.color || colors.accent.purple} strokeOpacity={0.5} strokeWidth={2} fill="none" markerEnd={`url(#ua-${conn.id})`} />
+              </svg>
+            );
+          })}
+          {/* Connection being drawn */}
+          {connectingFrom && connectingMouse && (() => {
+            const from = positions.find((p) => p.id === connectingFrom);
+            if (!from) return null;
+            const fromX = from.x + (from.width || 280) / 2;
+            const fromY = from.y + 80;
+            return (
+              <svg style={{ position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'visible', pointerEvents: 'none' }}>
                 <line x1={fromX} y1={fromY} x2={connectingMouse.x} y2={connectingMouse.y}
                   stroke={colors.accent.purple} strokeWidth={2} strokeDasharray="6 4" strokeOpacity={0.6} />
-              );
-            })()}
-          </svg>
+              </svg>
+            );
+          })()}
 
           {/* Category group labels */}
           {(() => {

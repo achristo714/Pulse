@@ -2,29 +2,18 @@ import { useState } from 'react';
 import { Avatar } from '../ui/Avatar';
 import { ViewToggle } from './ViewToggle';
 import { useUIStore } from '../../stores/uiStore';
-import { useTaskStore } from '../../stores/taskStore';
 import { colors, font } from '../../lib/theme';
 import type { Profile } from '../../lib/types';
 
 interface TopBarProps {
   profile: Profile;
   onSignOut: () => void;
+  onNewTask: () => void;
 }
 
-export function TopBar({ profile, onSignOut }: TopBarProps) {
+export function TopBar({ profile, onSignOut, onNewTask }: TopBarProps) {
   const setReportModalOpen = useUIStore((s) => s.setReportModalOpen);
-  const createTask = useTaskStore((s) => s.createTask);
   const [showMenu, setShowMenu] = useState(false);
-
-  const handleNewTask = async () => {
-    await createTask({
-      team_id: profile.team_id,
-      created_by: profile.id,
-      title: 'New Task',
-      status: 'todo',
-      category: 'admin',
-    });
-  };
 
   return (
     <div style={{
@@ -48,7 +37,7 @@ export function TopBar({ profile, onSignOut }: TopBarProps) {
           onMouseOut={(e) => { e.currentTarget.style.borderColor = colors.border.default; e.currentTarget.style.color = colors.text.secondary; }}
         >Generate Report</button>
 
-        <button onClick={handleNewTask} style={{
+        <button onClick={onNewTask} style={{
           padding: '6px 14px', backgroundColor: colors.accent.purple, color: '#FFFFFF',
           fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '6px',
           border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'background-color 150ms',

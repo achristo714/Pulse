@@ -11,6 +11,7 @@ import { CalendarView } from './views/CalendarView';
 import { DashboardView } from './views/DashboardView';
 import { AnalyticsView } from './views/AnalyticsView';
 import { ReportModal } from './components/report/ReportModal';
+import { QuickAddModal } from './components/task/QuickAddModal';
 import { CategoryEditor } from './components/ui/CategoryEditor';
 import { useTaskStore } from './stores/taskStore';
 import { useSubscriptionStore } from './stores/subscriptionStore';
@@ -101,6 +102,7 @@ export default function App() {
   const [newTaskCategory, setNewTaskCategory] = useState<string>('admin');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const fetchDependencies = useTaskStore((s) => s.fetchDependencies);
 
   useEffect(() => {
@@ -117,7 +119,7 @@ export default function App() {
     const handler = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable) return;
-      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); createTask({ team_id: TEAM_ID, created_by: DEMO_PROFILE.id, title: 'New Task', status: 'todo', category: newTaskCategory }); }
+      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setQuickAddOpen(true); }
       if (e.key === '1') setViewMode('list');
       if (e.key === '2') setViewMode('canvas');
       if (e.key === '3') setViewMode('calendar');
@@ -162,7 +164,7 @@ export default function App() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
-      <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} />
+      <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} onNewTask={() => setQuickAddOpen(true)} />
 
       {viewMode === 'list' && (
         <>
@@ -182,6 +184,7 @@ export default function App() {
 
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
       <CategoryEditor open={categoryEditorOpen} onClose={() => setCategoryEditorOpen(false)} teamId={TEAM_ID} />
+      <QuickAddModal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
 
       {/* Keyboard hints */}
       <div style={{
