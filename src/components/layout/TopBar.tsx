@@ -12,9 +12,10 @@ interface TopBarProps {
   onPresent?: () => void;
   onZen?: () => void;
   onTextToTasks?: () => void;
+  onTheme?: () => void;
 }
 
-export function TopBar({ profile, onSignOut, onNewTask, onPresent, onZen, onTextToTasks }: TopBarProps) {
+export function TopBar({ profile, onSignOut, onNewTask, onPresent, onZen, onTextToTasks, onTheme }: TopBarProps) {
   const setReportModalOpen = useUIStore((s) => s.setReportModalOpen);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -31,6 +32,9 @@ export function TopBar({ profile, onSignOut, onNewTask, onPresent, onZen, onText
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {onTheme && <TopBtn onClick={onTheme} title="Theme">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M8 2a6 6 0 0 0 0 12V2z" fill="currentColor" opacity="0.3"/><circle cx="6" cy="6" r="1.2" fill="currentColor"/><circle cx="10" cy="7" r="1" fill="currentColor" opacity="0.5"/><circle cx="7" cy="10" r="0.8" fill="currentColor" opacity="0.4"/></svg>
+        </TopBtn>}
         {onTextToTasks && <TopBtn onClick={onTextToTasks} title="Paste text → tasks (T)">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
         </TopBtn>}

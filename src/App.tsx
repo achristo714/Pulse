@@ -14,6 +14,7 @@ import { ReportModal } from './components/report/ReportModal';
 import { QuickAddModal } from './components/task/QuickAddModal';
 import { TextToTasks } from './components/task/TextToTasks';
 import { CategoryEditor } from './components/ui/CategoryEditor';
+import { ThemeSelector } from './components/ui/ThemeSelector';
 import { PresentView } from './views/PresentView';
 import { ZenView } from './views/ZenView';
 import { SyncView } from './views/SyncView';
@@ -111,6 +112,7 @@ export default function App() {
   const [presentMode, setPresentMode] = useState(false);
   const [syncContentForPresent, setSyncContentForPresent] = useState<string>('');
   const [zenMode, setZenMode] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
   const fetchDependencies = useTaskStore((s) => s.fetchDependencies);
 
   useEffect(() => {
@@ -175,7 +177,7 @@ export default function App() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
-      <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} onNewTask={() => setQuickAddOpen(true)} onPresent={() => setPresentMode(true)} onZen={() => setZenMode(true)} onTextToTasks={() => setTextToTasksOpen(true)} />
+      <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} onNewTask={() => setQuickAddOpen(true)} onPresent={() => setPresentMode(true)} onZen={() => setZenMode(true)} onTextToTasks={() => setTextToTasksOpen(true)} onTheme={() => setThemeOpen(true)} />
 
       {viewMode === 'list' && (
         <>
@@ -196,6 +198,7 @@ export default function App() {
 
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
       <CategoryEditor open={categoryEditorOpen} onClose={() => setCategoryEditorOpen(false)} teamId={TEAM_ID} />
+      <ThemeSelector open={themeOpen} onClose={() => setThemeOpen(false)} />
       <QuickAddModal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
       <TextToTasks open={textToTasksOpen} onClose={() => setTextToTasksOpen(false)} teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
       {presentMode && <PresentView profile={DEMO_PROFILE} members={[DEMO_PROFILE]} onExit={() => { setPresentMode(false); setSyncContentForPresent(''); }} syncContent={syncContentForPresent} />}
