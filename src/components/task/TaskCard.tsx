@@ -50,6 +50,14 @@ export function TaskCard({ task, members, selected, connecting, connectTarget, s
       onDoubleClick={onDoubleClick}
       onMouseDown={onMouseDown}
       onContextMenu={onContextMenu}
+      onClickCapture={(e) => {
+        // In connect mode, intercept ALL clicks on the card
+        if (connectTarget && onClick) {
+          e.stopPropagation();
+          e.preventDefault();
+          onClick();
+        }
+      }}
       onClick={onClick}
       onMouseOver={() => setHovered(true)}
       onMouseOut={() => setHovered(false)}

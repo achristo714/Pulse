@@ -29,6 +29,13 @@ export function KnowledgeView({ teamId, userId }: KnowledgeViewProps) {
 
   useEffect(() => { fetchArticles(teamId); }, [teamId, fetchArticles]);
 
+  // Auto-select the most recent article if none selected
+  useEffect(() => {
+    if (!selectedId && articles.length > 0) {
+      setSelectedId(articles[0].id);
+    }
+  }, [articles, selectedId]);
+
   const filtered = articles.filter((a) => {
     if (filterCategory && a.category !== filterCategory) return false;
     if (search && !a.title.toLowerCase().includes(search.toLowerCase()) && !a.content.toLowerCase().includes(search.toLowerCase())) return false;
