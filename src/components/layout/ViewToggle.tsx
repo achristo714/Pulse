@@ -7,7 +7,8 @@ const TABS = [
   { key: 'canvas' as const, label: 'Canvas', accent: '#818CF8' },
   { key: 'calendar' as const, label: 'Calendar', accent: '#60A5FA' },
   { key: 'goals' as const, label: 'Goals', accent: '#F59E0B' },
-  { key: 'knowledge' as const, label: 'Knowledge', accent: '#34D399' },
+  { key: 'analytics' as const, label: 'Analytics', accent: '#10B981' },
+  { key: 'knowledge' as const, label: 'Wiki', accent: '#34D399' },
   { key: 'vault' as const, label: 'Vault', accent: '#F472B6' },
 ];
 
@@ -25,7 +26,7 @@ export function ViewToggle() {
           <button
             key={tab.key}
             style={{
-              padding: '6px 14px', borderRadius: '18px', fontSize: font.size.sm, fontWeight: font.weight.medium,
+              padding: '6px 12px', borderRadius: '18px', fontSize: font.size.xs, fontWeight: font.weight.medium,
               color: active ? (tab.key === 'dashboard' ? colors.bg.primary : '#fff') : colors.text.secondary,
               backgroundColor: active ? tab.accent : 'transparent',
               border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 200ms ease-out',

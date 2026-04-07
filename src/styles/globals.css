@@ -154,3 +154,13 @@ input, select, textarea, button {
   border-top: 1px solid #2A2A2A;
   margin: 16px 0;
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  /* Hide canvas and some tabs on mobile */
+  body { font-size: 14px; }
+}
+@media (max-width: 640px) {
+  /* Stack layout on small screens */
+  body { font-size: 15px; }
+}

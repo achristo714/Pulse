@@ -9,6 +9,7 @@ import { KnowledgeView } from './views/KnowledgeView';
 import { GoalsView } from './views/GoalsView';
 import { CalendarView } from './views/CalendarView';
 import { DashboardView } from './views/DashboardView';
+import { AnalyticsView } from './views/AnalyticsView';
 import { ReportModal } from './components/report/ReportModal';
 import { CategoryEditor } from './components/ui/CategoryEditor';
 import { useTaskStore } from './stores/taskStore';
@@ -175,6 +176,7 @@ export default function App() {
       {viewMode === 'canvas' && <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />}
       {viewMode === 'calendar' && <CalendarView />}
       {viewMode === 'goals' && <GoalsView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
+      {viewMode === 'analytics' && <AnalyticsView />}
       {viewMode === 'knowledge' && <KnowledgeView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
       {viewMode === 'vault' && <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
 
