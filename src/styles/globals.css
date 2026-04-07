@@ -154,6 +154,12 @@ input, select, textarea, button {
   border-top: 1px solid #2A2A2A;
   margin: 16px 0;
 }
+.tiptap img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 8px 0;
+  border: 1px solid #2A2A2A;
+}
 
 /* Mobile responsive */
 @media (max-width: 768px) {

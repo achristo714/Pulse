@@ -109,7 +109,7 @@ export default function App() {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [textToTasksOpen, setTextToTasksOpen] = useState(false);
   const [presentMode, setPresentMode] = useState(false);
-  const [syncTopicsForPresent, setSyncTopicsForPresent] = useState<any[]>([]);
+  const [syncContentForPresent, setSyncContentForPresent] = useState<string>('');
   const [zenMode, setZenMode] = useState(false);
   const fetchDependencies = useTaskStore((s) => s.fetchDependencies);
 
@@ -189,7 +189,7 @@ export default function App() {
       {viewMode === 'canvas' && <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />}
       {viewMode === 'calendar' && <CalendarView />}
       {viewMode === 'goals' && <GoalsView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
-      {viewMode === 'sync' && <SyncView teamId={TEAM_ID} userId={DEMO_PROFILE.id} onPresent={(topics) => { setSyncTopicsForPresent(topics); setPresentMode(true); }} />}
+      {viewMode === 'sync' && <SyncView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} onPresent={(content) => { setSyncContentForPresent(content); setPresentMode(true); }} />}
       {viewMode === 'analytics' && <AnalyticsView />}
       {viewMode === 'knowledge' && <KnowledgeView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
       {viewMode === 'vault' && <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
@@ -198,7 +198,7 @@ export default function App() {
       <CategoryEditor open={categoryEditorOpen} onClose={() => setCategoryEditorOpen(false)} teamId={TEAM_ID} />
       <QuickAddModal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
       <TextToTasks open={textToTasksOpen} onClose={() => setTextToTasksOpen(false)} teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
-      {presentMode && <PresentView profile={DEMO_PROFILE} members={[DEMO_PROFILE]} onExit={() => { setPresentMode(false); setSyncTopicsForPresent([]); }} syncTopics={syncTopicsForPresent} />}
+      {presentMode && <PresentView profile={DEMO_PROFILE} members={[DEMO_PROFILE]} onExit={() => { setPresentMode(false); setSyncContentForPresent(''); }} syncContent={syncContentForPresent} />}
       {zenMode && <ZenView profile={DEMO_PROFILE} onExit={() => setZenMode(false)} />}
 
       {/* Keyboard hints */}

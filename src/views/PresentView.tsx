@@ -6,30 +6,14 @@ import { StatusCircle } from '../components/task/StatusCircle';
 import { colors, font } from '../lib/theme';
 import type { Task, Profile } from '../lib/types';
 
-interface SyncTopic {
-  id: string;
-  title: string;
-  notes: string;
-  type: string;
-  image_urls: string[];
-}
-
 interface PresentViewProps {
   profile: Profile;
   members: Profile[];
   onExit: () => void;
-  syncTopics?: SyncTopic[];
+  syncContent?: string;
 }
 
-const TOPIC_COLORS: Record<string, string> = {
-  update: '#7C3AED',
-  metric: '#10B981',
-  discussion: '#60A5FA',
-  decision: '#F59E0B',
-  blocker: '#EF4444',
-};
-
-export function PresentView({ members, onExit, syncTopics }: PresentViewProps) {
+export function PresentView({ members, onExit, syncContent }: PresentViewProps) {
   const tasks = useTaskStore((s) => s.tasks);
   const goals = useGoalStore((s) => s.goals);
   const { getCategoryConfig } = useCategoryStore();
@@ -42,31 +26,14 @@ export function PresentView({ members, onExit, syncTopics }: PresentViewProps) {
   const recentDone = useMemo(() => tasks.filter((t) => t.status === 'done').slice(0, 8), [tasks]);
   const activeGoals = useMemo(() => goals.filter((g) => g.status === 'active'), [goals]);
 
-  // Group sync topics by type
-  const syncByType = useMemo(() => {
-    const grouped: Record<string, SyncTopic[]> = {};
-    for (const t of (syncTopics || [])) {
-      if (!grouped[t.type]) grouped[t.type] = [];
-      grouped[t.type].push(t);
-    }
-    return grouped;
-  }, [syncTopics]);
-
-  const syncSections = Object.entries(syncByType).map(([type, topics]) => ({
-    id: `sync-${type}`,
-    label: type.charAt(0).toUpperCase() + type.slice(1) + 's',
-    topics,
-    type,
-  }));
-
   const sections = [
-    { id: 'overview', label: 'Overview', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined },
-    ...syncSections,
-    { id: 'in-progress', label: 'In Progress', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined },
-    ...(overdue.length > 0 ? [{ id: 'overdue', label: 'Overdue', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined }] : []),
-    ...(needsApproval.length > 0 ? [{ id: 'approvals', label: 'Needs Review', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined }] : []),
-    { id: 'completed', label: 'Recently Completed', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined },
-    ...(activeGoals.length > 0 ? [{ id: 'goals', label: 'Goals', topics: undefined as SyncTopic[] | undefined, type: undefined as string | undefined }] : []),
+    { id: 'overview', label: 'Overview' },
+    ...(syncContent ? [{ id: 'sync-notes', label: 'Sync Notes' }] : []),
+    { id: 'in-progress', label: 'In Progress' },
+    ...(overdue.length > 0 ? [{ id: 'overdue', label: 'Overdue' }] : []),
+    ...(needsApproval.length > 0 ? [{ id: 'approvals', label: 'Needs Review' }] : []),
+    { id: 'completed', label: 'Recently Completed' },
+    ...(activeGoals.length > 0 ? [{ id: 'goals', label: 'Goals' }] : []),
   ];
 
   const [currentSection, setCurrentSection] = useState(0);
@@ -166,36 +133,13 @@ export function PresentView({ members, onExit, syncTopics }: PresentViewProps) {
             </div>
           )}
 
-          {/* Sync topics grouped by type */}
-          {section.topics && section.type && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {section.topics.map((topic) => {
-                const tColor = TOPIC_COLORS[topic.type] || '#7C3AED';
-                return (
-                  <div key={topic.id} style={{
-                    padding: '16px 20px', borderRadius: '10px',
-                    backgroundColor: colors.bg.surface, border: `1px solid ${colors.border.default}`,
-                    borderLeft: `3px solid ${tColor}`,
-                  }}>
-                    <div style={{ fontSize: font.size.md, fontWeight: 600, color: colors.text.primary, marginBottom: topic.notes ? '6px' : 0 }}>
-                      {topic.title || 'Untitled'}
-                    </div>
-                    {topic.notes && (
-                      <p style={{ fontSize: font.size.sm, color: colors.text.secondary, lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
-                        {topic.notes}
-                      </p>
-                    )}
-                    {topic.image_urls && topic.image_urls.length > 0 && (
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-                        {topic.image_urls.map((url, i) => (
-                          <img key={i} src={url} alt="" style={{ maxHeight: '200px', borderRadius: '8px', border: `1px solid ${colors.border.default}`, objectFit: 'contain' }} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          {/* Sync notes — rendered as rich HTML */}
+          {section.id === 'sync-notes' && syncContent && (
+            <div
+              className="tiptap"
+              dangerouslySetInnerHTML={{ __html: syncContent }}
+              style={{ fontSize: font.size.md, lineHeight: 1.7, color: colors.text.primary }}
+            />
           )}
 
           {section.id === 'in-progress' && (
