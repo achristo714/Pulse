@@ -36,6 +36,11 @@ export interface Task {
   project_number: string | null;
   goal_id: string | null;
   knowledge_article_id: string | null;
+  needs_approval: boolean;
+  approved_by: string | null;
+  approved_at: string | null;
+  time_estimate_hours: number | null;
+  time_actual_hours: number | null;
   subtasks?: Subtask[];
   images?: TaskImage[];
   assigned_profile?: Profile | null;
@@ -134,6 +139,17 @@ export interface Goal {
   target_date: string | null;
   category: string;
   created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  team_id: string;
+  author_id: string;
+  content: string;
+  mentions: string[];
   created_at: string;
   updated_at: string;
 }

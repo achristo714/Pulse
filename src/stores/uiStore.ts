@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { TaskStatus } from '../lib/types';
 
-type ViewMode = 'list' | 'canvas' | 'calendar' | 'goals' | 'knowledge' | 'vault';
+type ViewMode = 'dashboard' | 'list' | 'canvas' | 'calendar' | 'goals' | 'knowledge' | 'vault';
 
 interface UIState {
   viewMode: ViewMode;
@@ -26,7 +26,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  viewMode: 'list',
+  viewMode: 'dashboard',
   setViewMode: (mode) => set({ viewMode: mode }),
 
   categoryFilters: [],

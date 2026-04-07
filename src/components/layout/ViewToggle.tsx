@@ -2,6 +2,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { colors, font } from '../../lib/theme';
 
 const TABS = [
+  { key: 'dashboard' as const, label: 'Home', accent: '#F5F5F5' },
   { key: 'list' as const, label: 'Tasks', accent: '#7C3AED' },
   { key: 'canvas' as const, label: 'Canvas', accent: '#818CF8' },
   { key: 'calendar' as const, label: 'Calendar', accent: '#60A5FA' },
@@ -15,12 +16,8 @@ export function ViewToggle() {
 
   return (
     <div style={{
-      display: 'flex',
-      backgroundColor: colors.bg.primary,
-      borderRadius: '22px',
-      padding: '3px',
-      border: `1px solid ${colors.border.default}`,
-      gap: '2px',
+      display: 'flex', backgroundColor: colors.bg.primary, borderRadius: '22px',
+      padding: '3px', border: `1px solid ${colors.border.default}`, gap: '2px',
     }}>
       {TABS.map((tab) => {
         const active = viewMode === tab.key;
@@ -28,31 +25,15 @@ export function ViewToggle() {
           <button
             key={tab.key}
             style={{
-              padding: '6px 14px',
-              borderRadius: '18px',
-              fontSize: font.size.sm,
-              fontWeight: font.weight.medium,
-              color: active ? '#fff' : colors.text.secondary,
+              padding: '6px 14px', borderRadius: '18px', fontSize: font.size.sm, fontWeight: font.weight.medium,
+              color: active ? (tab.key === 'dashboard' ? colors.bg.primary : '#fff') : colors.text.secondary,
               backgroundColor: active ? tab.accent : 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 200ms ease-out',
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 200ms ease-out',
               boxShadow: active ? `0 2px 8px ${tab.accent}30` : 'none',
             }}
             onClick={() => setViewMode(tab.key)}
-            onMouseOver={(e) => {
-              if (!active) {
-                e.currentTarget.style.color = tab.accent;
-                e.currentTarget.style.backgroundColor = `${tab.accent}10`;
-              }
-            }}
-            onMouseOut={(e) => {
-              if (!active) {
-                e.currentTarget.style.color = colors.text.secondary;
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }
-            }}
+            onMouseOver={(e) => { if (!active) { e.currentTarget.style.color = tab.accent; e.currentTarget.style.backgroundColor = `${tab.accent}10`; } }}
+            onMouseOut={(e) => { if (!active) { e.currentTarget.style.color = colors.text.secondary; e.currentTarget.style.backgroundColor = 'transparent'; } }}
           >
             {tab.label}
           </button>

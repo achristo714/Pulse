@@ -5,6 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { format } from 'date-fns';
 import { StatusCircle } from './StatusCircle';
 import { SubtaskList } from './SubtaskList';
+import { CommentThread } from './CommentThread';
 import { Avatar } from '../ui/Avatar';
 import { useTaskStore } from '../../stores/taskStore';
 import { useGoalStore } from '../../stores/goalStore';
@@ -261,6 +262,54 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
           </div>
         )}
 
+        {/* Approval + Time Tracking */}
+        <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px', display: 'flex', gap: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <SectionLabel>Approval</SectionLabel>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => updateTask(task.id, { needs_approval: !task.needs_approval })}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', borderRadius: '6px', fontSize: font.size.sm,
+                  color: task.needs_approval ? colors.status.wip : colors.text.muted,
+                  backgroundColor: task.needs_approval ? `${colors.status.wip}15` : 'transparent',
+                  border: `1px solid ${task.needs_approval ? colors.status.wip + '40' : colors.border.default}`,
+                  cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
+                }}
+              >
+                ⚑ {task.needs_approval ? 'Flagged' : 'Flag for review'}
+              </button>
+              {task.needs_approval && !task.approved_by && (
+                <button
+                  onClick={() => updateTask(task.id, { approved_by: task.created_by, approved_at: new Date().toISOString() })}
+                  style={{
+                    padding: '6px 12px', borderRadius: '6px', fontSize: font.size.sm, fontWeight: font.weight.medium,
+                    color: '#fff', backgroundColor: colors.status.done,
+                    border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  ✓ Approve
+                </button>
+              )}
+              {task.approved_by && (
+                <span style={{ fontSize: font.size.xs, color: colors.status.done }}>✓ Approved</span>
+              )}
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <SectionLabel>Time (hours)</SectionLabel>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ flex: 1 }}>
+                <input type="number" step="0.5" min="0" value={task.time_estimate_hours || ''} onChange={(e) => updateTask(task.id, { time_estimate_hours: e.target.value ? parseFloat(e.target.value) : null })} placeholder="Est" style={{ ...inputStyle, fontSize: font.size.xs, padding: '6px 8px' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <input type="number" step="0.5" min="0" value={task.time_actual_hours || ''} onChange={(e) => updateTask(task.id, { time_actual_hours: e.target.value ? parseFloat(e.target.value) : null })} placeholder="Actual" style={{ ...inputStyle, fontSize: font.size.xs, padding: '6px 8px' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Subtasks */}
         <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
           <SubtaskList taskId={task.id} subtasks={task.subtasks || []} category={task.category} />
@@ -334,6 +383,11 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
               >Upload Image</button>
             </>
           )}
+        </div>
+
+        {/* Comments */}
+        <div style={{ borderTop: `1px solid ${colors.border.default}`, paddingTop: '16px' }}>
+          <CommentThread taskId={task.id} teamId={task.team_id} authorId={task.created_by} members={members} />
         </div>
 
         {/* Footer */}
