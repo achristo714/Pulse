@@ -2,7 +2,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { colors, font } from '../../lib/theme';
 
 const TABS = [
-  { key: 'dashboard' as const, label: 'Home', accent: '#F5F5F5' },
+  { key: 'dashboard' as const, label: 'Home', accent: '#7C3AED' },
   { key: 'list' as const, label: 'Tasks', accent: '#7C3AED' },
   { key: 'canvas' as const, label: 'Canvas', accent: '#818CF8' },
   { key: 'calendar' as const, label: 'Calendar', accent: '#60A5FA' },
@@ -28,7 +28,7 @@ export function ViewToggle() {
               borderRadius: '6px',
               fontSize: font.size.xs,
               fontWeight: font.weight.medium,
-              color: active ? (tab.key === 'dashboard' ? colors.bg.primary : '#fff') : colors.text.secondary,
+              color: active ? '#fff' : colors.text.secondary,
               backgroundColor: active ? tab.accent : 'transparent',
               border: 'none',
               cursor: 'pointer',

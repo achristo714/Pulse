@@ -36,11 +36,9 @@ export function TopBar({ profile, onSignOut, onNewTask, onPresent, onZen, onText
           {onPresent && <IconBtn onClick={onPresent} title="Present"><PresentIcon /></IconBtn>}
         </div>
 
-        <button onClick={() => setReportModalOpen(true)} style={{
-          padding: '5px 10px', backgroundColor: 'transparent', color: colors.text.secondary,
-          fontSize: font.size.xs, fontWeight: font.weight.medium, borderRadius: '6px',
-          border: `1px solid ${colors.border.default}`, cursor: 'pointer', fontFamily: 'inherit',
-        }}>Report</button>
+        <IconBtn onClick={() => setReportModalOpen(true)} title="Generate Report (R)">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
+        </IconBtn>
 
         <button onClick={onNewTask} style={{
           padding: '5px 12px', backgroundColor: colors.accent.purple, color: '#FFFFFF',
