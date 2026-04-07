@@ -2,9 +2,6 @@ name: Build Desktop App
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 jobs:
   build-windows:
@@ -21,15 +18,17 @@ jobs:
         working-directory: electron
         run: npm install
 
-      - name: Build Windows exe
+      - name: Build Windows portable exe
         working-directory: electron
         run: npx electron-builder --win --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: Pulse-Windows
-          path: electron/dist/*.exe
+          path: electron/dist/Pulse-Portable.exe
 
   build-mac:
     runs-on: macos-latest
@@ -48,6 +47,8 @@ jobs:
       - name: Build macOS dmg
         working-directory: electron
         run: npx electron-builder --mac --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
