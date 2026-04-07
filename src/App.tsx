@@ -193,7 +193,7 @@ export default function App() {
       {viewMode === 'list' && (
         <>
           <FilterBar members={[DEMO_PROFILE]} searchQuery={searchQuery} onSearchChange={setSearchQuery} onEditCategories={() => setCategoryEditorOpen(true)} />
-          <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} category={newTaskCategory} onCategoryChange={setNewTaskCategory} />
+          <NewTaskInput teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} category={newTaskCategory} onCategoryChange={setNewTaskCategory} members={[DEMO_PROFILE]} />
         </>
       )}
 

@@ -1,18 +1,24 @@
 import { useState } from 'react';
 import { useTaskStore } from '../../stores/taskStore';
 import { CategoryPicker } from './CategoryPicker';
+import { Avatar } from '../ui/Avatar';
 import { colors, font } from '../../lib/theme';
+import type { Profile } from '../../lib/types';
+
 interface NewTaskInputProps {
   teamId: string;
   createdBy: string;
   category: string;
   onCategoryChange: (cat: string) => void;
+  members: Profile[];
 }
 
-export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: NewTaskInputProps) {
+export function NewTaskInput({ teamId, createdBy, category, onCategoryChange, members }: NewTaskInputProps) {
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [assignee, setAssignee] = useState<string | null>(null);
   const [showDate, setShowDate] = useState(false);
+  const [showAssignee, setShowAssignee] = useState(false);
   const [focused, setFocused] = useState(false);
   const createTask = useTaskStore((s) => s.createTask);
 
@@ -26,11 +32,16 @@ export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: 
       status: 'todo',
       category,
       due_date: dueDate || null,
+      assigned_to: assignee,
+      assignees: assignee ? [assignee] : [],
     });
     setTitle('');
     setDueDate('');
+    setAssignee(null);
     setShowDate(false);
   };
+
+  const assignedMember = members.find((m) => m.id === assignee);
 
   return (
     <div
@@ -75,6 +86,60 @@ export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: 
       {/* Category dots */}
       <CategoryPicker value={category} onChange={onCategoryChange} />
 
+      {/* Assignee picker */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <button
+          onClick={() => setShowAssignee(!showAssignee)}
+          title={assignedMember ? `Assigned to ${assignedMember.display_name}` : 'Assign to someone'}
+          style={{
+            width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'transparent', border: assignee ? 'none' : `1.5px dashed ${colors.text.muted}`,
+            cursor: 'pointer', padding: 0, transition: 'all 150ms',
+          }}
+        >
+          {assignedMember ? (
+            <Avatar name={assignedMember.display_name} url={assignedMember.avatar_url} size={26} />
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="5" r="2.5" stroke={colors.text.muted} strokeWidth="1.2" />
+              <path d="M2.5 12.5c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke={colors.text.muted} strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          )}
+        </button>
+
+        {showAssignee && (
+          <div style={{
+            position: 'absolute', right: 0, top: '100%', marginTop: '4px', width: '180px',
+            backgroundColor: colors.bg.surface, border: `1px solid ${colors.border.default}`,
+            borderRadius: '8px', boxShadow: '0 4px 24px rgba(0,0,0,0.2)', zIndex: 40, overflow: 'hidden',
+          }}>
+            <button
+              onClick={() => { setAssignee(null); setShowAssignee(false); }}
+              style={{
+                width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: font.size.sm,
+                color: !assignee ? colors.text.primary : colors.text.secondary,
+                backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >Unassigned</button>
+            {members.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => { setAssignee(m.id); setShowAssignee(false); }}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: font.size.sm,
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  color: assignee === m.id ? colors.text.primary : colors.text.secondary,
+                  backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                <Avatar name={m.display_name} url={m.avatar_url} size={20} />
+                {m.display_name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Date picker toggle */}
       {showDate ? (
         <input
@@ -82,15 +147,10 @@ export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: 
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
           style={{
-            backgroundColor: colors.bg.primary,
-            border: `1px solid ${colors.border.default}`,
-            borderRadius: '4px',
-            padding: '3px 8px',
-            fontSize: font.size.xs,
-            color: colors.text.primary,
-            colorScheme: 'dark',
-            outline: 'none',
-            fontFamily: 'inherit',
+            padding: '5px 10px', backgroundColor: colors.bg.primary,
+            border: `1px solid ${colors.border.default}`, borderRadius: '4px',
+            fontSize: font.size.xs, color: colors.text.primary, colorScheme: 'dark',
+            outline: 'none', fontFamily: 'inherit',
           }}
         />
       ) : (
@@ -98,21 +158,11 @@ export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: 
           onClick={() => setShowDate(true)}
           title="Add due date"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            backgroundColor: 'transparent',
-            border: '1px solid transparent',
-            color: colors.text.muted,
-            cursor: 'pointer',
-            transition: 'all 150ms',
-            padding: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: '28px', height: '28px', borderRadius: '6px',
+            backgroundColor: 'transparent', border: '1px solid transparent',
+            color: colors.text.muted, cursor: 'pointer', transition: 'all 150ms', padding: 0,
           }}
-          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = colors.bg.surfaceHover; e.currentTarget.style.color = colors.text.secondary; }}
-          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = colors.text.muted; }}
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" strokeWidth="1.2" />
@@ -137,8 +187,6 @@ export function NewTaskInput({ teamId, createdBy, category, onCategoryChange }: 
             fontFamily: 'inherit',
             transition: 'background-color 150ms',
           }}
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = colors.accent.purpleHover)}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = colors.accent.purple)}
         >
           Add
         </button>
