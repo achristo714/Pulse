@@ -9,9 +9,12 @@ interface TopBarProps {
   profile: Profile;
   onSignOut: () => void;
   onNewTask: () => void;
+  onPresent?: () => void;
+  onZen?: () => void;
+  onTextToTasks?: () => void;
 }
 
-export function TopBar({ profile, onSignOut, onNewTask }: TopBarProps) {
+export function TopBar({ profile, onSignOut, onNewTask, onPresent, onZen, onTextToTasks }: TopBarProps) {
   const setReportModalOpen = useUIStore((s) => s.setReportModalOpen);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -27,7 +30,10 @@ export function TopBar({ profile, onSignOut, onNewTask }: TopBarProps) {
         <ViewToggle />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {onTextToTasks && <TopBtn onClick={onTextToTasks} title="Paste text → tasks (T)">📋 Paste</TopBtn>}
+        {onZen && <TopBtn onClick={onZen} title="Focus mode (Z)">🧘 Focus</TopBtn>}
+        {onPresent && <TopBtn onClick={onPresent} title="Present mode (P)">📺 Present</TopBtn>}
         <button onClick={() => setReportModalOpen(true)} style={{
           padding: '6px 12px', backgroundColor: 'transparent', color: colors.text.secondary,
           fontSize: font.size.sm, fontWeight: font.weight.medium, borderRadius: '6px',
@@ -78,6 +84,17 @@ function MenuBtn({ onClick, children }: { onClick: () => void; children: React.R
       color: h ? colors.text.primary : colors.text.secondary,
       backgroundColor: h ? colors.bg.surfaceHover : 'transparent',
       border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
+    }}>{children}</button>
+  );
+}
+
+function TopBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+  const [h, setH] = useState(false);
+  return (
+    <button onClick={onClick} title={title} onMouseOver={() => setH(true)} onMouseOut={() => setH(false)} style={{
+      padding: '6px 10px', backgroundColor: 'transparent', color: h ? colors.text.primary : colors.text.muted,
+      fontSize: font.size.xs, borderRadius: '6px', border: `1px solid ${h ? colors.border.default : 'transparent'}`,
+      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
     }}>{children}</button>
   );
 }

@@ -12,7 +12,10 @@ import { DashboardView } from './views/DashboardView';
 import { AnalyticsView } from './views/AnalyticsView';
 import { ReportModal } from './components/report/ReportModal';
 import { QuickAddModal } from './components/task/QuickAddModal';
+import { TextToTasks } from './components/task/TextToTasks';
 import { CategoryEditor } from './components/ui/CategoryEditor';
+import { PresentView } from './views/PresentView';
+import { ZenView } from './views/ZenView';
 import { useTaskStore } from './stores/taskStore';
 import { useSubscriptionStore } from './stores/subscriptionStore';
 import { useKnowledgeStore } from './stores/knowledgeStore';
@@ -103,6 +106,9 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [textToTasksOpen, setTextToTasksOpen] = useState(false);
+  const [presentMode, setPresentMode] = useState(false);
+  const [zenMode, setZenMode] = useState(false);
   const fetchDependencies = useTaskStore((s) => s.fetchDependencies);
 
   useEffect(() => {
@@ -127,7 +133,10 @@ export default function App() {
       if (e.key === '5') setViewMode('knowledge');
       if (e.key === '6') setViewMode('vault');
       if (e.key === 'r' && !e.metaKey && !e.ctrlKey) setReportModalOpen(true);
-      if (e.key === 'Escape') setReportModalOpen(false);
+      if (e.key === 'Escape') { setReportModalOpen(false); setPresentMode(false); setZenMode(false); }
+      if (e.key === 'p' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setPresentMode(true); }
+      if (e.key === 'z' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setZenMode(true); }
+      if (e.key === 't' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setTextToTasksOpen(true); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -164,7 +173,7 @@ export default function App() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: colors.bg.primary, fontFamily: font.family }}>
-      <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} onNewTask={() => setQuickAddOpen(true)} />
+      <TopBar profile={DEMO_PROFILE} onSignOut={() => {}} onNewTask={() => setQuickAddOpen(true)} onPresent={() => setPresentMode(true)} onZen={() => setZenMode(true)} onTextToTasks={() => setTextToTasksOpen(true)} />
 
       {viewMode === 'list' && (
         <>
@@ -185,6 +194,9 @@ export default function App() {
       <ReportModal open={reportModalOpen} onClose={() => setReportModalOpen(false)} members={[DEMO_PROFILE]} />
       <CategoryEditor open={categoryEditorOpen} onClose={() => setCategoryEditorOpen(false)} teamId={TEAM_ID} />
       <QuickAddModal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
+      <TextToTasks open={textToTasksOpen} onClose={() => setTextToTasksOpen(false)} teamId={TEAM_ID} createdBy={DEMO_PROFILE.id} />
+      {presentMode && <PresentView profile={DEMO_PROFILE} members={[DEMO_PROFILE]} onExit={() => setPresentMode(false)} />}
+      {zenMode && <ZenView profile={DEMO_PROFILE} onExit={() => setZenMode(false)} />}
 
       {/* Keyboard hints */}
       <div style={{
@@ -193,7 +205,9 @@ export default function App() {
         border: `1px solid ${colors.border.default}`, zIndex: 5, lineHeight: 1.6,
       }}>
         <span style={{ color: colors.text.secondary }}>N</span> task &nbsp;
-        <span style={{ color: colors.text.secondary }}>1-6</span> views &nbsp;
+        <span style={{ color: colors.text.secondary }}>P</span> present &nbsp;
+        <span style={{ color: colors.text.secondary }}>Z</span> zen &nbsp;
+        <span style={{ color: colors.text.secondary }}>T</span> paste &nbsp;
         <span style={{ color: colors.text.secondary }}>R</span> report
       </div>
 
