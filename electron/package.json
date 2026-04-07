@@ -1,0 +1,36 @@
+{
+  "name": "pulse-desktop",
+  "version": "1.0.0",
+  "description": "Pulse — Task management for Applied Technology (Desktop)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "PULSE_URL=http://localhost:5173 electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.kpf.pulse",
+    "productName": "Pulse",
+    "files": [
+      "main.js",
+      "icon.png",
+      "tray-icon.png"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg"]
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "linux": {
+      "target": ["AppImage"]
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
