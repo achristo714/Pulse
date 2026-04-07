@@ -30,6 +30,45 @@ export function ReportModal({ open, onClose, members }: ReportModalProps) {
     return generateReportMarkdown(tasks, new Date(startDate), new Date(endDate), members, filterMember);
   }, [tasks, startDate, endDate, members, filterMember, reportType]);
 
+  const handleExportPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Convert markdown to simple HTML for print
+    const html = markdown
+      .replace(/^# (.+)$/gm, '<h1 style="font-size:24px;font-weight:600;margin:16px 0 8px">$1</h1>')
+      .replace(/^## (.+)$/gm, '<h2 style="font-size:18px;font-weight:600;color:#555;margin:12px 0 6px">$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3 style="font-size:15px;font-weight:600;color:#7C3AED;margin:16px 0 6px">$1</h3>')
+      .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #ddd;margin:16px 0">')
+      .replace(/^- \[x\] (.+)$/gm, '<div style="margin-left:24px;color:#888">✓ <s>$1</s></div>')
+      .replace(/^- \[ \] (.+)$/gm, '<div style="margin-left:24px">○ $1</div>')
+      .replace(/^  - (.+)$/gm, '<div style="margin-left:20px;color:#555">$1</div>')
+      .replace(/^- (.+)$/gm, '<div style="margin:2px 0">• $1</div>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^_(.+)_$/gm, '<em style="color:#888">$1</em>')
+      .replace(/\n\n/g, '<br>')
+      .replace(/\n/g, '');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Pulse Report</title>
+        <style>
+          body { font-family: 'Inter', -apple-system, system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; font-size: 13px; line-height: 1.6; }
+          h1 { color: #1a1a1a; border-bottom: 2px solid #7C3AED; padding-bottom: 8px; }
+          h2 { color: #555; }
+          h3 { color: #7C3AED; }
+          @media print { body { margin: 20px; } }
+        </style>
+      </head>
+      <body>${html}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 300);
+  };
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(markdown);
     setCopied(true);
@@ -102,6 +141,11 @@ export function ReportModal({ open, onClose, members }: ReportModalProps) {
             fontSize: font.size.base, fontWeight: font.weight.medium, borderRadius: '6px',
             border: 'none', cursor: 'pointer', fontFamily: 'inherit',
           }}>{copied ? 'Copied!' : 'Copy to Clipboard'}</button>
+          <button onClick={handleExportPDF} style={{
+            padding: '8px 16px', backgroundColor: colors.bg.surfaceActive, color: colors.text.primary,
+            fontSize: font.size.base, fontWeight: font.weight.medium, borderRadius: '6px',
+            border: `1px solid ${colors.border.default}`, cursor: 'pointer', fontFamily: 'inherit',
+          }}>Export PDF</button>
         </div>
       </div>
     </Modal>
