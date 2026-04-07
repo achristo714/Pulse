@@ -21,6 +21,7 @@ import { QuickAddModal } from './components/task/QuickAddModal';
 import { TextToTasks } from './components/task/TextToTasks';
 import { CategoryEditor } from './components/ui/CategoryEditor';
 import { ThemeSelector } from './components/ui/ThemeSelector';
+import { InstallBanner } from './components/ui/InstallBanner';
 import { PresentView } from './views/PresentView';
 import { ZenView } from './views/ZenView';
 import { SyncView } from './views/SyncView';
@@ -235,6 +236,8 @@ export default function App() {
         <DbgBtn onClick={handleSeedGoals} color={colors.category.support}>+ Goals</DbgBtn>
         <DbgBtn onClick={handleClearAll} color={colors.danger}>Clear All</DbgBtn>
       </div>
+
+      <InstallBanner />
     </div>
   );
 }
