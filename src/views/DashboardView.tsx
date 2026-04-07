@@ -48,6 +48,9 @@ export function DashboardView({ profile }: DashboardViewProps) {
           {totalMyTasks === 0 ? "You're all caught up!" : `You have ${totalMyTasks} task${totalMyTasks !== 1 ? 's' : ''} to work on`}
           {overdue.length > 0 && <span style={{ color: colors.danger }}> · {overdue.length} overdue</span>}
         </p>
+        <p style={{ fontSize: font.size.sm, color: colors.text.muted, marginTop: '10px', fontStyle: 'italic', opacity: 0.7 }}>
+          "{getDailyQuote()}"
+        </p>
       </div>
 
       {/* Stats row */}
@@ -197,4 +200,46 @@ function getTimeOfDay() {
   if (h < 12) return 'morning';
   if (h < 17) return 'afternoon';
   return 'evening';
+}
+
+const QUOTES = [
+  "The secret of getting ahead is getting started. — Mark Twain",
+  "Done is better than perfect.",
+  "Small progress is still progress.",
+  "Focus on being productive instead of busy. — Tim Ferriss",
+  "The best way to predict the future is to create it. — Peter Drucker",
+  "What gets measured gets managed. — Peter Drucker",
+  "Simplicity is the ultimate sophistication. — Leonardo da Vinci",
+  "First, solve the problem. Then, write the code. — John Johnson",
+  "Design is not just what it looks like. Design is how it works. — Steve Jobs",
+  "The only way to do great work is to love what you do. — Steve Jobs",
+  "Move fast and fix things.",
+  "Shipping beats perfection.",
+  "Clarity comes from action, not thought.",
+  "The best time to plant a tree was 20 years ago. The second best time is now.",
+  "Work hard in silence. Let success make the noise.",
+  "Every expert was once a beginner.",
+  "The way to get started is to quit talking and begin doing. — Walt Disney",
+  "It always seems impossible until it's done. — Nelson Mandela",
+  "Quality is not an act, it is a habit. — Aristotle",
+  "Make it work, make it right, make it fast. — Kent Beck",
+  "Creativity is intelligence having fun. — Albert Einstein",
+  "Your limitation — it's only your imagination.",
+  "Great things never come from comfort zones.",
+  "Dream it. Wish it. Do it.",
+  "If it scares you, it might be a good thing to try. — Seth Godin",
+  "The harder I work, the luckier I get. — Samuel Goldwyn",
+  "Strive not to be a success, but rather to be of value. — Albert Einstein",
+  "Be the change you wish to see in the world. — Gandhi",
+  "Architecture is a visual art and the buildings speak for themselves. — Julia Morgan",
+  "Less is more. — Mies van der Rohe",
+  "God is in the details. — Mies van der Rohe",
+];
+
+function getDailyQuote() {
+  // Use day of year as seed so the quote changes daily but is consistent within a day
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+  return QUOTES[dayOfYear % QUOTES.length];
 }
