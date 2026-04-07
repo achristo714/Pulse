@@ -43,8 +43,11 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
     }
     for (const key of Object.keys(grouped)) {
       grouped[key].sort((a, b) => {
-        if (a.status === 'done' && b.status !== 'done') return 1;
-        if (a.status !== 'done' && b.status === 'done') return -1;
+        // WIP first, then todo, then done at bottom
+        const statusOrder = { wip: 0, todo: 1, done: 2 };
+        const aOrder = statusOrder[a.status as keyof typeof statusOrder] ?? 1;
+        const bOrder = statusOrder[b.status as keyof typeof statusOrder] ?? 1;
+        if (aOrder !== bOrder) return aOrder - bOrder;
         if (sortBy === 'due_date') {
           if (!a.due_date && b.due_date) return 1;
           if (a.due_date && !b.due_date) return -1;

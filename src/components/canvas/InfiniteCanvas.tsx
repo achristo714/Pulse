@@ -455,18 +455,20 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
                   onTaskDoubleClick(task.id);
                 }}
                 onMouseDown={(e) => {
-                  if (connectingFrom) { e.preventDefault(); e.stopPropagation(); return; }
+                  if (connectingFrom) return; // don't start drag while connecting
                   handleCardMouseDown(pos.id, e);
                 }}
                 onClick={() => {
-                  // Complete connection if in connect mode
+                  console.log('[Arrow] onClick fired', { connectingFrom, posId: pos.id });
                   if (connectingFrom && connectingFrom !== pos.id) {
+                    console.log('[Arrow] Creating connection', connectingFrom, '→', pos.id);
                     createConnection(teamId, connectingFrom, pos.id);
                     setConnectingFrom(null);
                     setConnectingMouse(null);
                   }
                 }}
                 onStartConnect={() => {
+                  console.log('[Arrow] Connect mode started from', pos.id);
                   setConnectingFrom(pos.id);
                   setConnectingMouse({ x: pos.x + 140, y: pos.y + 80 });
                 }}
