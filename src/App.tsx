@@ -16,6 +16,7 @@ import { TextToTasks } from './components/task/TextToTasks';
 import { CategoryEditor } from './components/ui/CategoryEditor';
 import { PresentView } from './views/PresentView';
 import { ZenView } from './views/ZenView';
+import { SyncView } from './views/SyncView';
 import { useTaskStore } from './stores/taskStore';
 import { useSubscriptionStore } from './stores/subscriptionStore';
 import { useKnowledgeStore } from './stores/knowledgeStore';
@@ -187,6 +188,7 @@ export default function App() {
       {viewMode === 'canvas' && <CanvasView teamId={TEAM_ID} userId={DEMO_PROFILE.id} members={[DEMO_PROFILE]} />}
       {viewMode === 'calendar' && <CalendarView />}
       {viewMode === 'goals' && <GoalsView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
+      {viewMode === 'sync' && <SyncView teamId={TEAM_ID} userId={DEMO_PROFILE.id} onPresent={() => setPresentMode(true)} />}
       {viewMode === 'analytics' && <AnalyticsView />}
       {viewMode === 'knowledge' && <KnowledgeView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}
       {viewMode === 'vault' && <VaultView teamId={TEAM_ID} userId={DEMO_PROFILE.id} />}

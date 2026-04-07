@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { TaskStatus } from '../lib/types';
 
-type ViewMode = 'dashboard' | 'list' | 'canvas' | 'calendar' | 'goals' | 'knowledge' | 'vault' | 'analytics';
+type ViewMode = 'dashboard' | 'list' | 'canvas' | 'calendar' | 'goals' | 'sync' | 'knowledge' | 'vault' | 'analytics';
 
 interface UIState {
   viewMode: ViewMode;
