@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StatusCircle } from '../task/StatusCircle';
 import { CategoryPill } from '../task/CategoryPill';
 import { useTaskStore } from '../../stores/taskStore';
+import { useCategoryStore } from '../../stores/categoryStore';
 import { colors, font } from '../../lib/theme';
 import type { Task, Profile } from '../../lib/types';
 
@@ -16,6 +17,17 @@ interface CanvasInboxProps {
 
 export function CanvasInbox({ tasks, onPlaceAll, onStashAll, placedCount }: CanvasInboxProps) {
   const cycleStatus = useTaskStore((s) => s.cycleStatus);
+  const { categories } = useCategoryStore();
+  const [filterCat, setFilterCat] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  const filtered = tasks.filter((t) => {
+    if (filterCat && t.category !== filterCat) return false;
+    if (filterStatus && t.status !== filterStatus) return false;
+    if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('taskId', taskId);
@@ -27,38 +39,100 @@ export function CanvasInbox({ tasks, onPlaceAll, onStashAll, placedCount }: Canv
       position: 'absolute', left: 0, top: 0, bottom: 0, width: '260px',
       backgroundColor: colors.bg.surface, borderRight: `1px solid ${colors.border.default}`,
       overflowY: 'auto', zIndex: 10, fontFamily: font.family,
+      display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ padding: '14px 16px', borderBottom: `1px solid ${colors.border.default}`, display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: font.size.xs, fontWeight: font.weight.medium, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inbox</span>
-        <span style={{ fontSize: font.size.xs, color: colors.text.muted, backgroundColor: colors.bg.surfaceActive, padding: '1px 8px', borderRadius: '10px' }}>{tasks.length}</span>
-        <div style={{ flex: 1 }} />
-        {tasks.length > 0 && (
-          <button onClick={onPlaceAll} style={{
-            padding: '3px 8px', fontSize: font.size.xs, fontWeight: font.weight.medium,
-            color: colors.accent.purple, backgroundColor: colors.accent.purpleSubtle,
-            border: `1px solid ${colors.accent.purple}40`, borderRadius: '6px',
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}>Place All</button>
-        )}
-        {placedCount > 0 && (
-          <button onClick={onStashAll} style={{
-            padding: '3px 8px', fontSize: font.size.xs, fontWeight: font.weight.medium,
-            color: colors.text.muted, backgroundColor: 'transparent',
+      {/* Header */}
+      <div style={{ padding: '10px 12px', borderBottom: `1px solid ${colors.border.default}`, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+          <span style={{ fontSize: font.size.xs, fontWeight: font.weight.medium, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Inbox</span>
+          <span style={{ fontSize: font.size.xs, color: colors.text.muted, backgroundColor: colors.bg.surfaceActive, padding: '1px 8px', borderRadius: '10px' }}>{filtered.length}{filtered.length !== tasks.length ? `/${tasks.length}` : ''}</span>
+          <div style={{ flex: 1 }} />
+          {tasks.length > 0 && (
+            <button onClick={onPlaceAll} style={{
+              padding: '3px 8px', fontSize: font.size.xs, fontWeight: font.weight.medium,
+              color: colors.accent.purple, backgroundColor: colors.accent.purpleSubtle,
+              border: `1px solid ${colors.accent.purple}40`, borderRadius: '6px',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>Place All</button>
+          )}
+          {placedCount > 0 && (
+            <button onClick={onStashAll} style={{
+              padding: '3px 8px', fontSize: font.size.xs, fontWeight: font.weight.medium,
+              color: colors.text.muted, backgroundColor: 'transparent',
+              border: `1px solid ${colors.border.default}`, borderRadius: '6px',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>Stash All</button>
+          )}
+        </div>
+
+        {/* Search */}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search..."
+          style={{
+            width: '100%', padding: '5px 8px', backgroundColor: colors.bg.primary,
             border: `1px solid ${colors.border.default}`, borderRadius: '6px',
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}>Stash All</button>
-        )}
+            fontSize: font.size.xs, color: colors.text.primary, outline: 'none',
+            fontFamily: 'inherit', marginBottom: '8px',
+          }}
+        />
+
+        {/* Category filters */}
+        <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', marginBottom: '4px' }}>
+          {categories.map((cat) => (
+            <button
+              key={cat.key}
+              onClick={() => setFilterCat(filterCat === cat.key ? null : cat.key)}
+              style={{
+                width: '20px', height: '20px', borderRadius: '4px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: filterCat === cat.key ? `${cat.color}20` : 'transparent',
+                border: filterCat === cat.key ? `1.5px solid ${cat.color}` : `1px solid ${colors.border.default}`,
+                cursor: 'pointer', padding: 0, transition: 'all 150ms',
+              }}
+              title={cat.label}
+            >
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: cat.color }} />
+            </button>
+          ))}
+          <div style={{ width: '1px', height: '20px', backgroundColor: colors.border.default }} />
+          {['todo', 'wip', 'done'].map((s) => {
+            const statusColors: Record<string, string> = { todo: colors.status.todo, wip: colors.status.wip, done: colors.status.done };
+            const statusLabels: Record<string, string> = { todo: 'To Do', wip: 'WIP', done: 'Done' };
+            return (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(filterStatus === s ? null : s)}
+                style={{
+                  padding: '2px 6px', borderRadius: '4px',
+                  fontSize: '10px', fontWeight: 500,
+                  color: filterStatus === s ? statusColors[s] : colors.text.muted,
+                  backgroundColor: filterStatus === s ? `${statusColors[s]}15` : 'transparent',
+                  border: filterStatus === s ? `1px solid ${statusColors[s]}40` : `1px solid ${colors.border.default}`,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+                title={statusLabels[s]}
+              >
+                {statusLabels[s]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {tasks.length === 0 && (
-          <p style={{ fontSize: font.size.sm, color: colors.text.muted, textAlign: 'center', padding: '32px 0' }}>
-            {placedCount > 0 ? 'All tasks on canvas' : 'No tasks yet'}
-          </p>
-        )}
-        {tasks.map((task) => (
-          <InboxCard key={task.id} task={task} onDragStart={handleDragStart} onCycleStatus={cycleStatus} />
-        ))}
+      {/* Task list */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {filtered.length === 0 && (
+            <p style={{ fontSize: font.size.sm, color: colors.text.muted, textAlign: 'center', padding: '20px 0' }}>
+              {tasks.length === 0 ? (placedCount > 0 ? 'All tasks on canvas' : 'No tasks yet') : 'No matching tasks'}
+            </p>
+          )}
+          {filtered.map((task) => (
+            <InboxCard key={task.id} task={task} onDragStart={handleDragStart} onCycleStatus={cycleStatus} />
+          ))}
+        </div>
       </div>
     </div>
   );
