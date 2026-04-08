@@ -25,7 +25,7 @@ export function CanvasInbox({ tasks, onPlaceAll, onStashAll, placedCount }: Canv
   return (
     <div style={{
       position: 'absolute', left: 0, top: 0, bottom: 0, width: '260px',
-      backgroundColor: 'rgba(26,26,26,0.6)', borderRight: `1px dashed ${colors.border.default}`,
+      backgroundColor: colors.bg.surface, borderRight: `1px solid ${colors.border.default}`,
       overflowY: 'auto', zIndex: 10, fontFamily: font.family,
     }}>
       <div style={{ padding: '14px 16px', borderBottom: `1px solid ${colors.border.default}`, display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>

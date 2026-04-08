@@ -163,19 +163,19 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-    // Pinch-to-zoom (Ctrl+scroll) or regular scroll zoom
-    if (e.ctrlKey || e.metaKey) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      const delta = e.deltaY > 0 ? -0.05 : 0.05;
+    // Trackpad pinch (ctrlKey set by browser) or mouse wheel — always zoom
+    if (e.ctrlKey || e.metaKey || e.deltaX === 0) {
+      const delta = e.deltaY > 0 ? -0.08 : 0.08;
       const newZoom = Math.max(0.25, Math.min(4, zoom + delta));
       const scale = newZoom / zoom;
       setPan(mouseX - (mouseX - panX) * scale, mouseY - (mouseY - panY) * scale);
       setZoom(newZoom);
     } else {
-      // Two-finger trackpad pan
+      // Two-finger horizontal scroll on trackpad → pan
       setPan(panX - e.deltaX, panY - e.deltaY);
     }
   }, [zoom, panX, panY, setZoom, setPan]);
@@ -727,7 +727,7 @@ export function InfiniteCanvas({ teamId, userId, members, onTaskDoubleClick }: I
 
       <CanvasToolbar onZoomToFit={() => { setPan(0, 0); setZoom(1); }} onResetView={() => { setPan(0, 0); setZoom(1); }} />
 
-      <div style={{ position: 'absolute', bottom: '16px', right: '16px', fontSize: font.size.xs, color: colors.text.muted, backgroundColor: 'rgba(26,26,26,0.8)', padding: '4px 8px', borderRadius: '4px' }}>
+      <div style={{ position: 'absolute', bottom: '16px', right: '16px', fontSize: font.size.xs, color: colors.text.muted, backgroundColor: colors.bg.surface, border: `1px solid ${colors.border.default}`, padding: '4px 8px', borderRadius: '4px' }}>
         {Math.round(zoom * 100)}%
         {selectedIds.size > 1 && <span style={{ marginLeft: '8px', color: colors.accent.purple }}>{selectedIds.size} selected</span>}
       </div>
