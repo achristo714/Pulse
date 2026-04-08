@@ -20,7 +20,8 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
   const catKeys = categories.map((c) => c.key);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [sortBy, setSortBy] = useState<'default' | 'due_date' | 'updated'>('default');
-  const [layout, setLayout] = useState<'single' | 'multi'>('single');
+  const [layout, setLayout] = useState<'single' | 'multi'>(() => (localStorage.getItem('pulse-layout') as 'single' | 'multi') || 'single');
+  const handleSetLayout = (l: 'single' | 'multi') => { setLayout(l); localStorage.setItem('pulse-layout', l); };
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
@@ -83,7 +84,7 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
         <div style={{ width: '1px', height: '16px', backgroundColor: colors.border.default }} />
 
         {/* Layout toggle */}
-        <button onClick={() => setLayout(layout === 'single' ? 'multi' : 'single')} style={{
+        <button onClick={() => handleSetLayout(layout === 'single' ? 'multi' : 'single')} style={{
           fontSize: font.size.xs, padding: '2px 8px', borderRadius: '4px',
           color: layout === 'multi' ? colors.accent.purple : colors.text.muted,
           backgroundColor: layout === 'multi' ? colors.accent.purpleSubtle : 'transparent',

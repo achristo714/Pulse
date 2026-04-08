@@ -32,6 +32,7 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
   const { categories: teamCategories } = useCategoryStore();
   const [title, setTitle] = useState(task.title);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [syncSent, setSyncSent] = useState(false);
   const [visible, setVisible] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -82,6 +83,44 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
 
   const handleTitleBlur = () => {
     if (title.trim() && title !== task.title) updateTask(task.id, { title: title.trim() });
+  };
+
+  const handleSendToSync = async () => {
+    const { startOfWeek: sow, format: fmt } = await import('date-fns');
+    const thisWeek = fmt(sow(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+    // Find the category label for this task
+    const catLabel = teamCategories.find((c) => c.key === task.category)?.label || task.category;
+
+    // Find this week's sync
+    const { data: existing } = await supabase.from('meeting_notes').select('*').eq('team_id', task.team_id).eq('date', thisWeek).single();
+    if (existing) {
+      // Find the category section and append the task
+      const sectionRegex = new RegExp(`(<h2>${catLabel}</h2>\\s*<ul>)([\\s\\S]*?)(<\\/ul>)`);
+      const match = existing.content.match(sectionRegex);
+      if (match) {
+        const newContent = existing.content.replace(sectionRegex, `$1$2<li><strong>${task.title}</strong></li>$3`);
+        await supabase.from('meeting_notes').update({ content: newContent }).eq('id', existing.id);
+      } else {
+        // Category section doesn't exist — add it
+        const append = `<h2>${catLabel}</h2><ul><li><strong>${task.title}</strong></li></ul>`;
+        await supabase.from('meeting_notes').update({ content: existing.content + append }).eq('id', existing.id);
+      }
+    } else {
+      // Create new sync with the task in its category section
+      const cats = teamCategories.map((c) =>
+        c.key === task.category
+          ? `<h2>${c.label}</h2><ul><li><strong>${task.title}</strong></li></ul>`
+          : `<h2>${c.label}</h2><ul><li></li></ul>`
+      ).join('');
+      await supabase.from('meeting_notes').insert({
+        team_id: task.team_id, title: `Sync — Week of ${fmt(new Date(thisWeek), 'MMM d, yyyy')}`,
+        date: thisWeek, content: cats + '<hr><p></p>',
+        created_by: task.created_by,
+      });
+    }
+    setSyncSent(true);
+    setTimeout(() => setSyncSent(false), 3000);
   };
 
   const handleImageUpload = useCallback(async (files: FileList) => {
@@ -435,9 +474,14 @@ export function TaskDetailPanel({ task, members, onClose }: TaskDetailPanelProps
               <button onClick={() => setConfirmDelete(false)} style={{ padding: '4px 10px', backgroundColor: 'transparent', color: colors.text.secondary, fontSize: font.size.sm, borderRadius: '4px', border: `1px solid ${colors.border.default}`, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
             </div>
           ) : (
-            <button onClick={() => setConfirmDelete(true)} style={{ alignSelf: 'flex-start', padding: '4px 10px', backgroundColor: 'transparent', color: colors.danger, fontSize: font.size.sm, borderRadius: '4px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
-              Delete Task
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={handleSendToSync} style={{ padding: '4px 10px', backgroundColor: 'transparent', color: colors.accent.purple, fontSize: font.size.sm, borderRadius: '4px', border: `1px solid ${colors.accent.purple}30`, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {syncSent ? '✓ Added to Sync' : 'Send to Sync'}
+              </button>
+              <button onClick={() => setConfirmDelete(true)} style={{ padding: '4px 10px', backgroundColor: 'transparent', color: colors.danger, fontSize: font.size.sm, borderRadius: '4px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                Delete Task
+              </button>
+            </div>
           )}
         </div>
       </div>

@@ -7,6 +7,7 @@ import Highlight from '@tiptap/extension-highlight';
 import { format, startOfWeek } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import { useTaskStore } from '../stores/taskStore';
+import { useCategoryStore } from '../stores/categoryStore';
 import { colors, font } from '../lib/theme';
 import type { Profile } from '../lib/types';
 
@@ -26,7 +27,8 @@ interface SyncViewProps {
   onPresent: (content: string) => void;
 }
 
-export function SyncView({ teamId, userId, members, onPresent }: SyncViewProps) {
+export function SyncView({ teamId, userId, onPresent }: SyncViewProps) {
+  const { categories } = useCategoryStore();
   const [notes, setNotes] = useState<SyncNote[]>([]);
   const [currentNote, setCurrentNote] = useState<SyncNote | null>(null);
 
@@ -41,9 +43,9 @@ export function SyncView({ teamId, userId, members, onPresent }: SyncViewProps) 
   }, [teamId, thisWeek]);
 
   const createThisWeek = async () => {
-    // Build template with member sections
-    const memberNames = members.map((m) => m.display_name);
-    const template = memberNames.map((name) => `<h2>${name}</h2><ul><li></li></ul>`).join('') + '<hr><p></p>';
+    // Build template with category sections
+    const catNames = categories.map((c) => c.label);
+    const template = catNames.map((name) => `<h2>${name}</h2><ul><li></li></ul>`).join('') + '<hr><p></p>';
 
     const { data } = await supabase.from('meeting_notes').insert({
       team_id: teamId,

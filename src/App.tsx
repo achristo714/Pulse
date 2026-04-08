@@ -33,6 +33,7 @@ import { useCategoryStore } from './stores/categoryStore';
 import { useUIStore } from './stores/uiStore';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
 import { colors, font } from './lib/theme';
+import { supabase } from './lib/supabase';
 import type { Profile, TaskCategory, TaskStatus } from './lib/types';
 
 const TEAM_ID = '00000000-0000-0000-0000-000000000001';
@@ -192,6 +193,16 @@ export default function App() {
     fetchGoals(TEAM_ID);
   };
 
+  const handleSeedSync = async () => {
+    const { startOfWeek, format } = await import('date-fns');
+    const thisWeek = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const content = `<h2>Education</h2><ul><li>D5 Workshop prep — Andy presenting</li><li>Runway AI Summit registration</li><li>Grasshopper tutorial video series — update needed</li></ul><h2>Resources</h2><ul><li>GPU server access — waiting on IT</li><li>Rhino 8 license evaluation complete</li><li>NAS migration 80% done</li></ul><h2>Support</h2><ul><li>Revit plugin crash — fix deployed</li><li>VPN setup for remote team</li><li>D5 case study moving with Brian</li></ul><h2>Admin</h2><ul><li>xFigura Contract review</li><li>AI Guidelines update</li><li>Tech Week planning</li><li>AU Proposals deadline Friday</li></ul><hr><p><em>Next sync: Tuesday</em></p>`;
+    await supabase.from('meeting_notes').insert({
+      team_id: TEAM_ID, title: `Sync — Week of ${format(new Date(thisWeek), 'MMM d, yyyy')}`,
+      date: thisWeek, content, created_by: DEMO_PROFILE.id,
+    });
+  };
+
   const handleClearAll = async () => {
     if (!confirm('Delete everything? This cannot be undone.')) return;
     for (const t of [...tasks]) await deleteTask(t.id);
@@ -248,6 +259,7 @@ export default function App() {
         <DbgBtn onClick={handleSeedVault} color={colors.category.resources}>+ Vault</DbgBtn>
         <DbgBtn onClick={handleSeedKnowledge} color={colors.category.education}>+ Knowledge</DbgBtn>
         <DbgBtn onClick={handleSeedGoals} color={colors.category.support}>+ Goals</DbgBtn>
+        <DbgBtn onClick={handleSeedSync} color={'#FB923C'}>+ Sync</DbgBtn>
         <DbgBtn onClick={handleClearAll} color={colors.danger}>Clear All</DbgBtn>
       </div>
 
