@@ -1,9 +1,10 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import { TaskRow } from '../components/task/TaskRow';
 import { TaskDetailPanel } from '../components/task/TaskDetailPanel';
 import { useTaskStore } from '../stores/taskStore';
 import { useUIStore } from '../stores/uiStore';
 import { useCategoryStore } from '../stores/categoryStore';
+import { supabase } from '../lib/supabase';
 import { colors, font } from '../lib/theme';
 import type { Profile, Task } from '../lib/types';
 
@@ -22,6 +23,9 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
   const [sortBy, setSortBy] = useState<'default' | 'due_date' | 'updated'>('default');
   const [layout, setLayout] = useState<'single' | 'multi'>(() => (localStorage.getItem('pulse-layout') as 'single' | 'multi') || 'single');
   const handleSetLayout = (l: 'single' | 'multi') => { setLayout(l); localStorage.setItem('pulse-layout', l); };
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+  const [bulkSending, setBulkSending] = useState(false);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
@@ -60,6 +64,69 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
     }
     return grouped;
   }, [filteredTasks, sortBy, catKeys]);
+
+  const toggleBulkSelect = (id: string) => {
+    setBulkSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkSelectAll = () => {
+    if (bulkSelected.size === filteredTasks.length) {
+      setBulkSelected(new Set());
+    } else {
+      setBulkSelected(new Set(filteredTasks.map((t) => t.id)));
+    }
+  };
+
+  const handleBulkSendToSync = useCallback(async () => {
+    if (bulkSelected.size === 0) return;
+    setBulkSending(true);
+    const { startOfWeek: sow, format: fmt } = await import('date-fns');
+    const thisWeek = fmt(sow(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const teamId = tasks[0]?.team_id;
+    if (!teamId) return;
+
+    // Get or create sync
+    let { data: syncDoc } = await supabase.from('meeting_notes').select('*').eq('team_id', teamId).eq('date', thisWeek).single();
+    if (!syncDoc) {
+      const template = categories.map((c) => `<h2>${c.label}</h2><ul><li></li></ul>`).join('') + '<hr><p></p>';
+      const { data } = await supabase.from('meeting_notes').insert({
+        team_id: teamId, title: `Sync — Week of ${fmt(new Date(thisWeek), 'MMM d, yyyy')}`,
+        date: thisWeek, content: template, created_by: tasks[0].created_by,
+      }).select().single();
+      syncDoc = data;
+    }
+    if (!syncDoc) { setBulkSending(false); return; }
+
+    // Group selected tasks by category
+    let content = syncDoc.content;
+    const selectedTasks = tasks.filter((t) => bulkSelected.has(t.id));
+    const byCategory: Record<string, string[]> = {};
+    for (const t of selectedTasks) {
+      if (!byCategory[t.category]) byCategory[t.category] = [];
+      byCategory[t.category].push(t.title);
+    }
+
+    for (const [catKey, titles] of Object.entries(byCategory)) {
+      const catLabel = categories.find((c) => c.key === catKey)?.label || catKey;
+      const bullets = titles.map((title) => `<li><strong>${title}</strong></li>`).join('');
+      const sectionRegex = new RegExp(`(<h2>${catLabel}</h2>\\s*<ul>)([\\s\\S]*?)(<\\/ul>)`);
+      if (content.match(sectionRegex)) {
+        content = content.replace(sectionRegex, `$1$2${bullets}$3`);
+      } else {
+        content += `<h2>${catLabel}</h2><ul>${bullets}</ul>`;
+      }
+    }
+
+    await supabase.from('meeting_notes').update({ content }).eq('id', syncDoc.id);
+    setBulkSending(false);
+    setBulkMode(false);
+    setBulkSelected(new Set());
+    alert(`${selectedTasks.length} task${selectedTasks.length !== 1 ? 's' : ''} added to this week's sync`);
+  }, [bulkSelected, tasks, categories]);
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
   const completedCount = tasks.filter((t) => t.status === 'done').length;
@@ -101,6 +168,22 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
           {layout === 'multi' ? 'Columns' : 'Single'}
         </button>
 
+        <button onClick={() => { setBulkMode(!bulkMode); setBulkSelected(new Set()); }} style={{
+          fontSize: font.size.xs, padding: '2px 8px', borderRadius: '4px',
+          color: bulkMode ? colors.accent.purple : colors.text.muted,
+          backgroundColor: bulkMode ? colors.accent.purpleSubtle : 'transparent',
+          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', gap: '4px',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+            <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+            <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+            {bulkMode && <path d="M9 10L10.5 11.5L13 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />}
+          </svg>
+          Select
+        </button>
+
         <div style={{ flex: 1 }} />
 
         {completedCount > 0 && (
@@ -113,6 +196,36 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
           </button>
         )}
       </div>
+
+      {/* Bulk action bar */}
+      {bulkMode && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 28px',
+          backgroundColor: colors.accent.purpleSubtle, borderBottom: `1px solid ${colors.accent.purple}30`,
+        }}>
+          <button onClick={bulkSelectAll} style={{
+            padding: '3px 10px', fontSize: font.size.xs, fontWeight: font.weight.medium,
+            color: colors.accent.purple, backgroundColor: 'transparent',
+            border: `1px solid ${colors.accent.purple}40`, borderRadius: '4px',
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>{bulkSelected.size === filteredTasks.length ? 'Deselect All' : 'Select All'}</button>
+          <span style={{ fontSize: font.size.xs, color: colors.text.secondary }}>
+            {bulkSelected.size} selected
+          </span>
+          <div style={{ flex: 1 }} />
+          {bulkSelected.size > 0 && (
+            <button onClick={handleBulkSendToSync} disabled={bulkSending} style={{
+              padding: '5px 14px', fontSize: font.size.xs, fontWeight: font.weight.semibold,
+              color: '#fff', backgroundColor: colors.accent.purple,
+              border: 'none', borderRadius: '6px', cursor: 'pointer', fontFamily: 'inherit',
+            }}>{bulkSending ? 'Sending...' : `Send ${bulkSelected.size} to Sync`}</button>
+          )}
+          <button onClick={() => { setBulkMode(false); setBulkSelected(new Set()); }} style={{
+            padding: '3px 8px', fontSize: font.size.xs, color: colors.text.muted,
+            backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+          }}>Cancel</button>
+        </div>
+      )}
 
       {filteredTasks.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '250px', color: colors.text.muted }}>
@@ -141,7 +254,7 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
                   onToggle={() => toggleCategoryCollapse(cat as any)}
                 />
                 {!isCollapsed && (
-                  <ReorderableList tasks={catTasks} members={members} onReorder={(ids) => reorderTasks(cat, ids)} onSelect={(id) => setSelectedTask(id)} />
+                  <ReorderableList tasks={catTasks} members={members} onReorder={(ids) => reorderTasks(cat, ids)} onSelect={(id) => bulkMode ? toggleBulkSelect(id) : setSelectedTask(id)} bulkMode={bulkMode} bulkSelected={bulkSelected} onToggleBulk={toggleBulkSelect} />
                 )}
               </div>
             );
@@ -164,7 +277,7 @@ export function ListView({ members, searchQuery = '' }: ListViewProps) {
                 onToggle={() => toggleCategoryCollapse(cat as any)}
               />
               {!isCollapsed && (
-                <ReorderableList tasks={catTasks} members={members} onReorder={(ids) => reorderTasks(cat, ids)} onSelect={(id) => setSelectedTask(id)} />
+                <ReorderableList tasks={catTasks} members={members} onReorder={(ids) => reorderTasks(cat, ids)} onSelect={(id) => bulkMode ? toggleBulkSelect(id) : setSelectedTask(id)} bulkMode={bulkMode} bulkSelected={bulkSelected} onToggleBulk={toggleBulkSelect} />
               )}
             </div>
           );
@@ -203,7 +316,7 @@ function CategoryHeader({ label, color, count, collapsed, onToggle }: { label: s
   );
 }
 
-function ReorderableList({ tasks, members, onReorder, onSelect }: { tasks: Task[]; members: Profile[]; onReorder: (ids: string[]) => void; onSelect: (id: string) => void }) {
+function ReorderableList({ tasks, members, onReorder, onSelect, bulkMode, bulkSelected, onToggleBulk }: { tasks: Task[]; members: Profile[]; onReorder: (ids: string[]) => void; onSelect: (id: string) => void; bulkMode?: boolean; bulkSelected?: Set<string>; onToggleBulk?: (id: string) => void }) {
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -222,8 +335,34 @@ function ReorderableList({ tasks, members, onReorder, onSelect }: { tasks: Task[
   return (
     <div>
       {tasks.map((task, idx) => (
-        <div key={task.id} draggable onDragStart={() => handleDragStart(idx)} onDragOver={(e) => handleDragOver(e, idx)} onDrop={handleDrop} onDragEnd={() => setDragIdx(null)} style={{ opacity: dragIdx === idx ? 0.4 : 1, transition: 'opacity 150ms' }}>
-          <TaskRow task={task} members={members} onClick={() => onSelect(task.id)} />
+        <div key={task.id} draggable={!bulkMode} onDragStart={() => handleDragStart(idx)} onDragOver={(e) => handleDragOver(e, idx)} onDrop={handleDrop} onDragEnd={() => setDragIdx(null)} style={{ opacity: dragIdx === idx ? 0.4 : 1, transition: 'opacity 150ms', display: 'flex', alignItems: 'stretch' }}>
+          {bulkMode && (
+            <div
+              onClick={(e) => { e.stopPropagation(); onToggleBulk?.(task.id); }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '36px', flexShrink: 0, cursor: 'pointer',
+                backgroundColor: bulkSelected?.has(task.id) ? colors.accent.purpleSubtle : 'transparent',
+                borderBottom: `1px solid ${colors.border.subtle}`,
+                transition: 'background-color 150ms',
+              }}
+            >
+              <div style={{
+                width: '16px', height: '16px', borderRadius: '4px',
+                border: `2px solid ${bulkSelected?.has(task.id) ? colors.accent.purple : colors.text.muted}`,
+                backgroundColor: bulkSelected?.has(task.id) ? colors.accent.purple : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 150ms',
+              }}>
+                {bulkSelected?.has(task.id) && (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )}
+              </div>
+            </div>
+          )}
+          <div style={{ flex: 1 }}>
+            <TaskRow task={task} members={members} onClick={() => onSelect(task.id)} />
+          </div>
         </div>
       ))}
     </div>
