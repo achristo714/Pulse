@@ -121,15 +121,16 @@ input, select, textarea, button {
   opacity: 0.5;
 }
 .tiptap code {
-  background: rgba(128, 128, 128, 0.15);
+  background: var(--pulse-bg-surface, rgba(128,128,128,0.15));
+  color: var(--pulse-accent, #7C3AED);
   padding: 1px 5px;
   border-radius: 3px;
   font-size: 13px;
   font-family: 'SF Mono', 'Fira Code', monospace;
 }
 .tiptap pre {
-  background: rgba(128, 128, 128, 0.08);
-  border: 1px solid rgba(128, 128, 128, 0.2);
+  background: var(--pulse-bg-primary, rgba(128,128,128,0.08));
+  border: 1px solid var(--pulse-border, rgba(128,128,128,0.2));
   border-radius: 6px;
   padding: 12px 16px;
   margin: 8px 0;
@@ -138,18 +139,19 @@ input, select, textarea, button {
 .tiptap pre code {
   background: none;
   padding: 0;
+  color: var(--pulse-text-primary, inherit);
   font-size: 13px;
 }
 .tiptap blockquote {
-  border-left: 3px solid rgba(128, 128, 128, 0.4);
+  border-left: 3px solid var(--pulse-accent, rgba(128,128,128,0.4));
   padding-left: 14px;
   margin: 8px 0;
-  opacity: 0.8;
+  color: var(--pulse-text-secondary, inherit);
   font-style: italic;
 }
 .tiptap hr {
   border: none;
-  border-top: 1px solid rgba(128, 128, 128, 0.2);
+  border-top: 1px solid var(--pulse-border, rgba(128,128,128,0.2));
   margin: 16px 0;
 }
 .tiptap mark {
@@ -162,7 +164,7 @@ input, select, textarea, button {
   max-width: 100%;
   border-radius: 8px;
   margin: 8px 0;
-  border: 1px solid rgba(128, 128, 128, 0.2);
+  border: 1px solid var(--pulse-border, rgba(128,128,128,0.2));
 }
 
 /* Mobile responsive */

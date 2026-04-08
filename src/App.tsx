@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect } from 'react';
 import { _bindThemeStore } from './lib/theme';
 import { useThemeStore } from './stores/themeStore';
 
@@ -134,6 +134,20 @@ export default function App() {
 
   // Real-time sync across devices
   useRealtimeSync(TEAM_ID);
+
+  // Inject theme CSS custom properties for static CSS (tiptap etc.)
+  const activeTheme = useThemeStore((s) => s.theme);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const c = activeTheme.colors;
+    root.style.setProperty('--pulse-bg-primary', c.bg.primary);
+    root.style.setProperty('--pulse-bg-surface', c.bg.surface);
+    root.style.setProperty('--pulse-border', c.border.default);
+    root.style.setProperty('--pulse-text-primary', c.text.primary);
+    root.style.setProperty('--pulse-text-secondary', c.text.secondary);
+    root.style.setProperty('--pulse-text-muted', c.text.muted);
+    root.style.setProperty('--pulse-accent', c.accent.purple);
+  }, [activeTheme]);
 
   // Keyboard shortcuts
   useEffect(() => {
