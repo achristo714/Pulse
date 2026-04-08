@@ -237,9 +237,6 @@ const QUOTES = [
 ];
 
 function getDailyQuote() {
-  // Use day of year as seed so the quote changes daily but is consistent within a day
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
-  return QUOTES[dayOfYear % QUOTES.length];
+  // Random quote each page load
+  return QUOTES[Math.floor(Math.random() * QUOTES.length)];
 }

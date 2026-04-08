@@ -25,9 +25,15 @@ interface UIState {
   toggleCategoryCollapse: (cat: string) => void;
 }
 
+// Persist viewMode in localStorage
+const savedView = (typeof window !== 'undefined' && localStorage.getItem('pulse-view')) as ViewMode | null;
+
 export const useUIStore = create<UIState>((set) => ({
-  viewMode: 'dashboard',
-  setViewMode: (mode) => set({ viewMode: mode }),
+  viewMode: savedView || 'dashboard',
+  setViewMode: (mode) => {
+    localStorage.setItem('pulse-view', mode);
+    set({ viewMode: mode });
+  },
 
   categoryFilters: [],
   statusFilters: [],
